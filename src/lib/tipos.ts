@@ -121,6 +121,9 @@ export type Agendamento = {
   criado_em: string;
 };
 
+/** Conta de cliente (agenda) ou de profissional (painel). Migração 005. */
+export type TipoConta = "cliente" | "profissional";
+
 /** Foto de corte/trabalho da galeria (migração 004). */
 export type Trabalho = {
   id: string;

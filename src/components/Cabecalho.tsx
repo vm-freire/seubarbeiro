@@ -13,6 +13,9 @@ export async function Cabecalho({ barbearia, link = "/" }: { barbearia?: string;
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  // cliente vê "Meus horários"; barbeiro vê "Painel" (contas separadas)
+  const { data: perfil } = user ? await supabase.from("perfis").select("tipo").eq("id", user.id).maybeSingle() : { data: null };
+  const profissional = perfil?.tipo === "profissional" || (!!user && !perfil);
 
   return (
     <header className="nao-imprimir cabecalho-rolagem sticky top-0 z-40 backdrop-blur-sm">
@@ -24,8 +27,11 @@ export async function Cabecalho({ barbearia, link = "/" }: { barbearia?: string;
           <BotaoTema />
           {user ? (
             <>
-              <Link href="/meus-agendamentos" className="btn btn-pequeno hidden sm:inline-flex">Meus horários</Link>
-              <Link href="/painel" className="btn btn-pequeno">Painel</Link>
+              {profissional ? (
+                <Link href="/painel" className="btn btn-pequeno">Painel</Link>
+              ) : (
+                <Link href="/meus-agendamentos" className="btn btn-pequeno">Meus horários</Link>
+              )}
               <form action={sair}>
                 <button className="btn btn-pequeno">Sair</button>
               </form>

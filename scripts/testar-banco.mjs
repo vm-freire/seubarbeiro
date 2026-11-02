@@ -47,11 +47,11 @@ async function erro(uid, sql, params = []) {
   try { await como(uid, sql, params); return null; } catch (e) { return e.message; }
 }
 
-const usuario = async (email, nome) =>
+const usuario = async (email, nome, tipo = "cliente") =>
   (await db.query(`insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`,
-    [email, { nome, telefone: "(41) 99999-0000" }])).rows[0].id;
+    [email, { nome, telefone: "(41) 99999-0000", tipo }])).rows[0].id;
 
-const A = await usuario("barbeiro@example.com", "João Barbeiro");
+const A = await usuario("barbeiro@example.com", "João Barbeiro", "profissional");
 const B = await usuario("cliente1@example.com", "Pedro");
 const C = await usuario("cliente2@example.com", "Lucas");
 
@@ -59,6 +59,12 @@ ok((await db.query(`select nome, telefone from perfis where id=$1`, [A])).rows[0
 
 const barb = (await como(A, `select criar_barbearia('Barbearia do João', 'barbearia-do-joao') id`)).rows[0].id;
 ok(!!barb, "criar_barbearia");
+
+// tipo de conta: cliente x profissional
+ok((await db.query(`select tipo from perfis where id=$1`, [A])).rows[0].tipo === "profissional", "cadastro de barbeiro grava tipo profissional");
+ok((await db.query(`select tipo from perfis where id=$1`, [B])).rows[0].tipo === "cliente", "cadastro comum grava tipo cliente");
+ok((await erro(B, `select criar_barbearia('Do Pedro', 'do-pedro')`))?.includes("conta de cliente"), "cliente não cria barbearia");
+ok((await erro(B, `update perfis set tipo='profissional' where id=$1`, [B]))?.includes("não pode ser trocado"), "cliente não vira profissional sozinho");
 ok((await erro(B, `select criar_barbearia('Outra', 'barbearia-do-joao')`))?.includes("já está em uso"), "slug repetido dá mensagem amigável");
 
 const prof = (await db.query(`select id, nome from profissionais where barbearia_id=$1`, [barb])).rows[0];
@@ -127,7 +133,7 @@ ok(rel.por_pagamento.length === 2, "relatório separa pix e dinheiro");
 ok((await erro(B, `select relatorio_caixa($1, $2::date, $2::date)`, [barb, ter]))?.includes("Sem acesso"), "cliente não vê relatório");
 
 // equipe: convite, permissões do barbeiro, relatório por profissional, fotos
-const D = await usuario("barbeiro2@example.com", "Carlos");
+const D = await usuario("barbeiro2@example.com", "Carlos", "profissional");
 const conv = (await como(A, `insert into convites (barbearia_id) values ($1) returning codigo`, [barb])).rows[0].codigo;
 ok((await como(null, `select ver_convite($1) j`, [conv])).rows[0].j.valido === true, "convite válido aparece sem login");
 ok((await erro(B, `insert into convites (barbearia_id) values ($1)`, [barb])) !== null, "cliente não cria convite");
@@ -154,6 +160,10 @@ ok((await como(null, `select servico_id from profissional_nao_faz where barbeari
 ok((await erro(B, `select agendar($1,$2,$3::timestamptz,$4::uuid[])`, [barb, profD.id, ts(ter, "17:00"), [sv["Corte de cabelo"]]]))?.includes("não faz"), "cliente não agenda serviço que o profissional não faz");
 ok((await erro(B, `select agendar($1,$2,$3::timestamptz,$4::uuid[])`, [barb, prof.id, ts(ter, "17:00"), [sv["Corte de cabelo"]]])) === null, "com outro profissional o mesmo serviço passa");
 ok((await erro(D, `select agendar_pelo_painel($1,$2,$3::timestamptz,$4::uuid[],null,'Y','1')`, [barb, prof.id, ts(ter, "18:00"), [sv["Barba"]]]))?.includes("própria agenda"), "barbeiro não marca na agenda do outro");
+ok((await erro(D, `select agendar($1,$2,$3::timestamptz,$4::uuid[])`, [barb, prof.id, ts(ter, "18:00"), [sv["Barba"]]]))?.includes("conta de barbeiro"), "barbeiro não agenda como cliente pelo site");
+const E = await usuario("cliente3@example.com", "Marcos");
+const conv2 = (await como(A, `insert into convites (barbearia_id) values ($1) returning codigo`, [barb])).rows[0].codigo;
+ok((await erro(E, `select aceitar_convite($1, 'Marcos', 'Barbeiro')`, [conv2]))?.includes("conta de cliente"), "cliente não entra na equipe por convite");
 ok(!!(await como(D, `select agendar_pelo_painel($1,$2,$3::timestamptz,$4::uuid[],null,'Novo do Carlos','41977776666') id`, [barb, profD.id, ts(ter, "16:00"), [sv["Barba"]]])).rows[0].id, "barbeiro marca na própria agenda");
 ok((await como(D, `select nome from clientes`)).rows.length === 2, "barbeiro vê o cliente que cadastrou");
 ok((await erro(D, `insert into bloqueios (barbearia_id, profissional_id, inicio, fim) values ($1, null, now(), now() + interval '1 hour')`, [barb])) !== null, "barbeiro não fecha a barbearia toda");

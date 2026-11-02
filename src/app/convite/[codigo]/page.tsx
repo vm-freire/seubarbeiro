@@ -7,6 +7,7 @@ import { FormularioAcao } from "@/components/FormularioAcao";
 import { LogoMarca } from "@/components/Logo";
 import { usuarioAtual } from "@/lib/dados";
 import { createClient } from "@/lib/supabase/server";
+import { sair } from "@/app/(conta)/acoes";
 import { aceitarConvite } from "./acoes";
 
 export const metadata: Metadata = { title: "Convite para a equipe", robots: { index: false } };
@@ -42,8 +43,18 @@ export default async function Page({ params }: PageProps<"/convite/[codigo]">) {
         ) : !usuario ? (
           <div className="cartao mt-8 space-y-3 text-center">
             <p>Para entrar na equipe, primeiro crie a sua conta (ou entre, se já tiver).</p>
-            <Link href={`/cadastro?proximo=${encodeURIComponent(aqui)}`} className="btn-primario w-full">Criar minha conta</Link>
+            <Link href={`/cadastro?tipo=barbeiro&proximo=${encodeURIComponent(aqui)}`} className="btn-primario w-full">Criar minha conta de barbeiro</Link>
             <Link href={`/entrar?proximo=${encodeURIComponent(aqui)}`} className="btn w-full">Já tenho conta</Link>
+          </div>
+        ) : usuario.tipo === "cliente" ? (
+          <div className="cartao mt-8 space-y-3 text-center">
+            <p>
+              Você está numa conta de <strong>cliente</strong>. Para entrar na equipe, use uma <strong>conta de barbeiro</strong> (com outro e-mail).
+            </p>
+            <form action={sair}>
+              <input type="hidden" name="proximo" value={`/cadastro?tipo=barbeiro&proximo=${encodeURIComponent(aqui)}`} />
+              <button className="btn-primario w-full">Sair e criar conta de barbeiro</button>
+            </form>
           </div>
         ) : (
           <FormularioAcao acao={aceitarConvite} className="cartao mt-8 space-y-4">

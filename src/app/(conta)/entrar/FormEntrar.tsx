@@ -9,14 +9,14 @@ import { destinoSeguro } from "../destino";
 export function FormEntrar({ proximo }: { proximo?: string }) {
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const destino = destinoSeguro(proximo);
 
   async function entrar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErro(null);
     setEnviando(true);
     const f = new FormData(e.currentTarget);
-    const { error } = await createClient().auth.signInWithPassword({
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: String(f.get("email")).trim(),
       password: String(f.get("senha")),
     });
@@ -25,7 +25,13 @@ export function FormEntrar({ proximo }: { proximo?: string }) {
       setEnviando(false);
       return;
     }
-    // navegação completa para o servidor já enxergar a sessão nova
+    // barbeiro vai para o painel; cliente para os horários (ou para onde estava)
+    const { data: perfil } = await supabase.from("perfis").select("tipo").eq("id", data.user.id).maybeSingle();
+    const profissional = perfil?.tipo === "profissional";
+    let destino = destinoSeguro(proximo, profissional ? "/painel" : "/meus-agendamentos");
+    if (!profissional && destino.startsWith("/painel")) destino = "/meus-agendamentos?aviso=cliente";
+    // navegação completa (de propósito) para o servidor já enxergar a sessão nova
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(destino);
   }
 

@@ -25,7 +25,7 @@ type Props = {
   };
   hoje: string;
   ultimoDia: string;
-  usuario: { nome: string; telefone: string } | null;
+  usuario: { nome: string; telefone: string; tipo: "cliente" | "profissional" } | null;
   inicial: { s?: string; p?: string; d?: string; h?: string };
 };
 
@@ -313,9 +313,15 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
           )}
 
           {erro && <p className="aviso selo-vermelho block" role="alert">{erro}</p>}
-          <button type="button" className="btn-primario w-full" onClick={confirmar} disabled={enviando}>
-            {enviando ? "Agendando…" : usuario ? "Confirmar agendamento" : "Entrar e confirmar"}
-          </button>
+          {usuario?.tipo === "profissional" ? (
+            <p className="aviso selo-amarelo block">
+              Você está numa <strong>conta de barbeiro</strong>. Para marcar como cliente, saia e use uma conta de cliente (com outro e-mail). Para marcar para um cliente, use a Agenda do painel.
+            </p>
+          ) : (
+            <button type="button" className="btn-primario w-full" onClick={confirmar} disabled={enviando}>
+              {enviando ? "Agendando…" : usuario ? "Confirmar agendamento" : "Entrar e confirmar"}
+            </button>
+          )}
         </section>
       )}
     </div>

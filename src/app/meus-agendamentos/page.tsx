@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Cabecalho } from "@/components/Cabecalho";
 import { SeloStatus } from "@/components/SeloStatus";
 import { quando, type Status } from "@/lib/formatar";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { cancelarMeu } from "./acoes";
 
@@ -18,11 +19,16 @@ type Linha = {
   agendamento_itens: { nome: string }[];
 };
 
-export default async function Page() {
+export default async function Page({ searchParams }: PageProps<"/meus-agendamentos">) {
+  const { aviso } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // conta de barbeiro não é cliente: vai para o painel
+  const { data: perfil } = await supabase.from("perfis").select("tipo").eq("id", user?.id ?? "").maybeSingle();
+  if (perfil?.tipo === "profissional") redirect("/painel");
 
   // Só os agendamentos ligados à conta (a regra de acesso do banco já filtra)
   const { data } = await supabase
@@ -41,6 +47,11 @@ export default async function Page() {
       <Cabecalho />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
         <h1 className="titulo mb-6">Meus horários</h1>
+        {aviso === "cliente" && (
+          <p className="aviso selo-amarelo mb-6 block">
+            Esta é uma conta de <strong>cliente</strong>. O painel da barbearia é só para contas de barbeiro: saia e entre (ou crie) uma conta de barbeiro com outro e-mail.
+          </p>
+        )}
 
         <h2 className="subtitulo mb-3">Próximos</h2>
         {proximos.length === 0 ? (

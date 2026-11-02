@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "./supabase/server";
 import { hojeLocal, somarDias } from "./tempo";
-import type { Barbearia, HorarioExtra, HorarioSemana, NaoFaz, Profissional, Promocao, Servico, Trabalho } from "./tipos";
+import type { TipoConta, Barbearia, HorarioExtra, HorarioSemana, NaoFaz, Profissional, Promocao, Servico, Trabalho } from "./tipos";
 
 /** Tudo que a página pública e o agendamento precisam (só dados públicos). */
 export const carregarBarbeariaPublica = cache(async (slug: string) => {
@@ -46,6 +46,8 @@ export async function usuarioAtual() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: perfil } = await supabase.from("perfis").select("nome, telefone").eq("id", user.id).maybeSingle();
-  return { id: user.id, email: user.email ?? "", nome: perfil?.nome ?? "", telefone: perfil?.telefone ?? "" };
+  const { data: perfil } = await supabase.from("perfis").select("nome, telefone, tipo").eq("id", user.id).maybeSingle();
+  // conta de cliente ou de profissional (migração 005); sem a coluna, trata como cliente
+  const tipo: TipoConta = perfil?.tipo === "profissional" ? "profissional" : "cliente";
+  return { id: user.id, email: user.email ?? "", nome: perfil?.nome ?? "", telefone: perfil?.telefone ?? "", tipo };
 }

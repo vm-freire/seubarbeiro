@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { BotaoTema } from "@/components/BotaoTema";
@@ -13,7 +14,11 @@ import { MenuPainel } from "./MenuPainel";
 export const metadata: Metadata = { title: { default: "Painel", template: "%s · Painel" }, robots: { index: false } };
 
 export default async function Layout({ children }: LayoutProps<"/painel">) {
-  const { atual, barbearias, meuProfissional, user } = await contextoPainel();
+  const { atual, barbearias, meuProfissional, user, supabase } = await contextoPainel();
+
+  // conta de cliente não usa o painel (se a coluna ainda não existir, não bloqueia)
+  const { data: perfil } = await supabase.from("perfis").select("tipo").eq("id", user.id).maybeSingle();
+  if (perfil?.tipo === "cliente") redirect("/meus-agendamentos?aviso=cliente");
 
   if (!atual) {
     return (
@@ -22,10 +27,7 @@ export default async function Layout({ children }: LayoutProps<"/painel">) {
         <h1 className="titulo entrar mb-1 text-4xl">Criar sua barbearia</h1>
         <p className="mb-6 text-sm text-suave">Depois você ajusta serviços, preços e horários. Já deixamos um exemplo pronto.</p>
         <CriarBarbearia />
-        <p className="mt-8 text-center text-sm text-suave">
-          Recebeu um convite de uma barbearia? Abra o link do convite.{" "}
-          <br />É cliente? <Link href="/meus-agendamentos" className="underline">Ver meus horários</Link>
-        </p>
+        <p className="mt-8 text-center text-sm text-suave">Recebeu um convite de uma barbearia? Abra o link do convite.</p>
       </main>
     );
   }

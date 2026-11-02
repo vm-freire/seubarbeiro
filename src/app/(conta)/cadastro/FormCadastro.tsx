@@ -10,7 +10,7 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const destino = destinoSeguro(proximo, barbeiro ? "/painel" : "/");
+  const destino = destinoSeguro(proximo, barbeiro ? "/painel" : "/meus-agendamentos");
 
   async function cadastrar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,7 +26,8 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
       email: String(f.get("email")).trim(),
       password: String(f.get("senha")),
       options: {
-        data: { nome: String(f.get("nome")).trim(), telefone },
+        // cliente e barbeiro são contas separadas (o tipo não muda depois)
+        data: { nome: String(f.get("nome")).trim(), telefone, tipo: barbeiro ? "profissional" : "cliente" },
         emailRedirectTo: `${window.location.origin}${destino}`,
       },
     });
@@ -50,7 +51,7 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
       <div>
         <label className="rotulo" htmlFor="telefone">WhatsApp (com DDD)</label>
         <input id="telefone" name="telefone" type="tel" inputMode="tel" autoComplete="tel" required placeholder="(41) 99999-8888" className="campo" />
-        <p className="ajuda">É por aqui que a barbearia confirma o seu horário.</p>
+        <p className="ajuda">{barbeiro ? "Seu WhatsApp de contato." : "É por aqui que a barbearia confirma o seu horário."}</p>
       </div>
       <div>
         <label className="rotulo" htmlFor="email">E-mail</label>
@@ -62,7 +63,7 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
         <p className="ajuda">Pelo menos 6 caracteres.</p>
       </div>
       {erro && <p className="aviso selo-vermelho block" role="alert">{erro}</p>}
-      <button className="btn-primario w-full" disabled={enviando}>{enviando ? "Criando…" : "Criar conta"}</button>
+      <button className="btn-primario w-full" disabled={enviando}>{enviando ? "Criando…" : barbeiro ? "Criar conta de barbeiro" : "Criar conta de cliente"}</button>
       <p className="text-center text-sm text-suave">
         Já tem conta?{" "}
         <Link className="font-medium text-destaque underline" href={`/entrar${proximo ? `?proximo=${encodeURIComponent(proximo)}` : ""}`}>
