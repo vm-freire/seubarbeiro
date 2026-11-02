@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { traduzirErro } from "@/lib/site";
+import { comLimite, traduzirErro } from "@/lib/site";
 import { destinoSeguro } from "../destino";
 
 export function FormEntrar({ proximo }: { proximo?: string }) {
@@ -15,24 +15,31 @@ export function FormEntrar({ proximo }: { proximo?: string }) {
     setErro(null);
     setEnviando(true);
     const f = new FormData(e.currentTarget);
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: String(f.get("email")).trim(),
-      password: String(f.get("senha")),
-    });
-    if (error) {
-      setErro(traduzirErro(error));
+    try {
+      const supabase = createClient();
+      const { data, error } = await comLimite(
+        supabase.auth.signInWithPassword({
+          email: String(f.get("email")).trim(),
+          password: String(f.get("senha")),
+        }),
+      );
+      if (error) {
+        setErro(traduzirErro(error));
+        setEnviando(false);
+        return;
+      }
+      // barbeiro vai para o painel; cliente para os horários (ou para onde estava)
+      const { data: perfil } = await comLimite(supabase.from("perfis").select("tipo").eq("id", data.user.id).maybeSingle());
+      const profissional = perfil?.tipo === "profissional";
+      let destino = destinoSeguro(proximo, profissional ? "/painel" : "/meus-agendamentos");
+      if (!profissional && destino.startsWith("/painel")) destino = "/meus-agendamentos?aviso=cliente";
+      // navegação completa (de propósito) para o servidor já enxergar a sessão nova
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign(destino);
+    } catch (err) {
+      setErro(traduzirErro(err as Error));
       setEnviando(false);
-      return;
     }
-    // barbeiro vai para o painel; cliente para os horários (ou para onde estava)
-    const { data: perfil } = await supabase.from("perfis").select("tipo").eq("id", data.user.id).maybeSingle();
-    const profissional = perfil?.tipo === "profissional";
-    let destino = destinoSeguro(proximo, profissional ? "/painel" : "/meus-agendamentos");
-    if (!profissional && destino.startsWith("/painel")) destino = "/meus-agendamentos?aviso=cliente";
-    // navegação completa (de propósito) para o servidor já enxergar a sessão nova
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-    window.location.assign(destino);
   }
 
   return (

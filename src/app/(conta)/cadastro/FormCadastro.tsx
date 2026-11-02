@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { traduzirErro } from "@/lib/site";
+import { comLimite, traduzirErro } from "@/lib/site";
 import { destinoSeguro } from "../destino";
 
 export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro: boolean }) {
@@ -22,30 +22,40 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
       return;
     }
     setEnviando(true);
-    const supabase = createClient();
-    // um WhatsApp por conta (o banco também confere; aqui é só para avisar antes)
-    const { data: emUso } = await supabase.rpc("telefone_em_uso", { p_telefone: telefone });
-    if (emUso) {
+    try {
+      const supabase = createClient();
+      // um WhatsApp por conta (o banco também confere; aqui é só para avisar antes)
+      const { data: emUso } = await comLimite(supabase.rpc("telefone_em_uso", { p_telefone: telefone }));
+      if (emUso) {
+        setEnviando(false);
+        setErro("Esse WhatsApp já tem uma conta. Use a opção Entrar.");
+        return;
+      }
+      const { data, error } = await comLimite(
+        supabase.auth.signUp({
+          email: String(f.get("email")).trim(),
+          password: String(f.get("senha")),
+          options: {
+            // cliente e barbeiro são contas separadas (o tipo não muda depois)
+            data: { nome: String(f.get("nome")).trim(), telefone, tipo: barbeiro ? "profissional" : "cliente" },
+            emailRedirectTo: `${window.location.origin}${destino}`,
+          },
+        }),
+      );
+      if (error) {
+        setEnviando(false);
+        return setErro(traduzirErro(error));
+      }
+      if (!data.session) {
+        setEnviando(false);
+        setAviso("Conta criada! Enviamos um link para o seu e-mail. Abra o link para ativar a conta e depois entre.");
+        return;
+      }
+      window.location.assign(destino);
+    } catch (err) {
+      setErro(traduzirErro(err as Error));
       setEnviando(false);
-      setErro("Esse WhatsApp já tem uma conta. Use a opção Entrar.");
-      return;
     }
-    const { data, error } = await supabase.auth.signUp({
-      email: String(f.get("email")).trim(),
-      password: String(f.get("senha")),
-      options: {
-        // cliente e barbeiro são contas separadas (o tipo não muda depois)
-        data: { nome: String(f.get("nome")).trim(), telefone, tipo: barbeiro ? "profissional" : "cliente" },
-        emailRedirectTo: `${window.location.origin}${destino}`,
-      },
-    });
-    setEnviando(false);
-    if (error) return setErro(traduzirErro(error));
-    if (!data.session) {
-      setAviso("Conta criada! Enviamos um link para o seu e-mail. Abra o link para ativar a conta e depois entre.");
-      return;
-    }
-    window.location.assign(destino);
   }
 
   if (aviso) return <p className="aviso selo-verde block">{aviso}</p>;

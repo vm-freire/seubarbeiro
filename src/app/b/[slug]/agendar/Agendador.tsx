@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { diaTemAtendimento, livresDoDia } from "@/lib/agenda/disponibilidade";
 import { moeda } from "@/lib/formatar";
 import { precoDoDia } from "@/lib/precos";
-import { traduzirErro } from "@/lib/site";
+import { comLimite, traduzirErro } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
 import { localParaDate, NOMES_DIAS_CURTOS, somarDias, diaSemana } from "@/lib/tempo";
 import type { Barbearia, HorarioExtra, HorarioSemana, NaoFaz, Profissional, Promocao, Servico } from "@/lib/tipos";
@@ -141,26 +141,34 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
       return;
     }
     setEnviando(true);
-    const supabase = createClient();
-    const { data: id, error } = await supabase.rpc("agendar", {
-      p_barbearia: b.id,
-      p_profissional: profId,
-      p_inicio: localParaDate(dataValida, horaValida, b.fuso).toISOString(),
-      p_servicos: escolhidos,
-      p_nome: nome,
-      p_telefone: telefone,
-      p_observacoes: obs,
-    });
-    if (error || !id) {
+    try {
+      const supabase = createClient();
+      const { data: id, error } = await comLimite(
+        supabase.rpc("agendar", {
+          p_barbearia: b.id,
+          p_profissional: profId,
+          p_inicio: localParaDate(dataValida, horaValida, b.fuso).toISOString(),
+          p_servicos: escolhidos,
+          p_nome: nome,
+          p_telefone: telefone,
+          p_observacoes: obs,
+        }),
+      );
+      if (error || !id) {
+        setEnviando(false);
+        setErro(traduzirErro(error));
+        // o horário pode ter sido ocupado: recarrega a lista
+        setOcupados(null);
+        setVersao((v) => v + 1);
+        return;
+      }
+      const { data: ag } = await comLimite(supabase.from("agendamentos").select("token_confirmacao").eq("id", id).single());
+      router.push(ag ? `/c/${ag.token_confirmacao}?novo=1` : "/meus-agendamentos");
+    } catch (err) {
+      // sem resposta: o horário pode ter sido marcado mesmo assim, então manda conferir
       setEnviando(false);
-      setErro(traduzirErro(error));
-      // o horário pode ter sido ocupado: recarrega a lista
-      setOcupados(null);
-      setVersao((v) => v + 1);
-      return;
+      setErro(`${traduzirErro(err as Error)} Antes de tentar de novo, confira em Meus horários se ele já foi marcado.`);
     }
-    const { data: ag } = await supabase.from("agendamentos").select("token_confirmacao").eq("id", id).single();
-    router.push(ag ? `/c/${ag.token_confirmacao}?novo=1` : "/meus-agendamentos");
   }
 
   // numeração dos passos: sem escolha de profissional, começa no 1
