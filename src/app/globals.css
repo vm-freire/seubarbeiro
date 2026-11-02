@@ -1,26 +1,130 @@
 @import "tailwindcss";
 
+/* Visual provisório (o front será refeito depois). Cores em variáveis
+   para trocar a identidade num lugar só. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --fundo: #f6f4f0;
+  --superficie: #ffffff;
+  --superficie-2: #efece6;
+  --texto: #1c1a17;
+  --suave: #6b655c;
+  --borda: #ddd7cc;
+  --destaque: #b45309;
+  --destaque-texto: #ffffff;
+  --amarelo-fundo: #fef3c7;
+  --amarelo-texto: #854d0e;
+  --verde-fundo: #dcfce7;
+  --verde-texto: #166534;
+  --vermelho-fundo: #fee2e2;
+  --vermelho-texto: #991b1b;
+  --azul-fundo: #dbeafe;
+  --azul-texto: #1e40af;
+  --cinza-fundo: #ece9e4;
+  --cinza-texto: #57534e;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --fundo: #141210;
+    --superficie: #1e1b18;
+    --superficie-2: #292520;
+    --texto: #f1ede6;
+    --suave: #a8a196;
+    --borda: #3a352e;
+    --destaque: #f59e0b;
+    --destaque-texto: #1c1a17;
+    --amarelo-fundo: #422006;
+    --amarelo-texto: #fde68a;
+    --verde-fundo: #052e16;
+    --verde-texto: #86efac;
+    --vermelho-fundo: #450a0a;
+    --vermelho-texto: #fca5a5;
+    --azul-fundo: #172554;
+    --azul-texto: #93c5fd;
+    --cinza-fundo: #292524;
+    --cinza-texto: #a8a29e;
   }
 }
 
+@theme inline {
+  --color-fundo: var(--fundo);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-texto: var(--texto);
+  --color-suave: var(--suave);
+  --color-borda: var(--borda);
+  --color-destaque: var(--destaque);
+  --color-destaque-texto: var(--destaque-texto);
+  --font-sans: var(--font-geist-sans);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+@layer components {
+  .cartao {
+    @apply rounded-xl border border-borda bg-superficie p-4;
+  }
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-borda bg-superficie px-4 text-sm font-medium transition-colors hover:bg-superficie-2 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primario {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-destaque bg-destaque px-4 text-sm font-semibold text-destaque-texto transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-perigo {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-borda bg-superficie px-4 text-sm font-medium text-[var(--vermelho-texto)] transition-colors hover:bg-superficie-2 disabled:opacity-50;
+  }
+  .btn-pequeno {
+    @apply min-h-9 px-3 text-xs;
+  }
+  .campo {
+    @apply min-h-11 w-full rounded-lg border border-borda bg-superficie px-3 text-base text-texto placeholder:text-suave;
+  }
+  .rotulo {
+    @apply mb-1 block text-sm font-medium;
+  }
+  .ajuda {
+    @apply mt-1 text-xs text-suave;
+  }
+  .titulo {
+    @apply text-2xl font-bold tracking-tight;
+  }
+  .subtitulo {
+    @apply text-lg font-semibold;
+  }
+  .selo {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .selo-amarelo { background: var(--amarelo-fundo); color: var(--amarelo-texto); }
+  .selo-verde { background: var(--verde-fundo); color: var(--verde-texto); }
+  .selo-vermelho { background: var(--vermelho-fundo); color: var(--vermelho-texto); }
+  .selo-azul { background: var(--azul-fundo); color: var(--azul-texto); }
+  .selo-cinza { background: var(--cinza-fundo); color: var(--cinza-texto); }
+  .aviso {
+    @apply rounded-lg px-3 py-2 text-sm;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--destaque);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media print {
+  .nao-imprimir {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
 }
