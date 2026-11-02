@@ -117,7 +117,11 @@ export type Agendamento = {
   forma_pagamento: Exclude<Pagamento, "nao_informado"> | null;
   pagamento_obs: string | null;
   observacoes: string | null;
+  criado_em: string;
 };
+
+/** Serviço que um profissional não faz (o dono marca em Equipe). */
+export type NaoFaz = { profissional_id: string; servico_id: string };
 
 export type AgendamentoCompleto = Agendamento & {
   clientes: Pick<Cliente, "id" | "nome" | "telefone"> | null;

@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "./supabase/server";
 import { hojeLocal, somarDias } from "./tempo";
-import type { Barbearia, HorarioExtra, HorarioSemana, Profissional, Promocao, Servico } from "./tipos";
+import type { Barbearia, HorarioExtra, HorarioSemana, NaoFaz, Profissional, Promocao, Servico } from "./tipos";
 
 /** Tudo que a página pública e o agendamento precisam (só dados públicos). */
 export const carregarBarbeariaPublica = cache(async (slug: string) => {
@@ -11,12 +11,13 @@ export const carregarBarbeariaPublica = cache(async (slug: string) => {
   if (!barbearia) return null;
 
   const agora = new Date().toISOString();
-  const [prof, serv, promo, hs, ex] = await Promise.all([
+  const [prof, serv, promo, hs, ex, nf] = await Promise.all([
     supabase.from("profissionais").select("*").eq("barbearia_id", barbearia.id).eq("ativo", true).order("ordem").order("nome"),
     supabase.from("servicos").select("*").eq("barbearia_id", barbearia.id).eq("ativo", true).order("ordem").order("nome"),
     supabase.from("promocoes").select("*").eq("barbearia_id", barbearia.id).eq("ativa", true),
     supabase.from("horarios_semana").select("*").eq("barbearia_id", barbearia.id).order("inicio"),
     supabase.from("horarios_extras").select("*").eq("barbearia_id", barbearia.id).gte("fim", agora).order("inicio"),
+    supabase.from("profissional_nao_faz").select("profissional_id, servico_id").eq("barbearia_id", barbearia.id),
   ]);
 
   return {
@@ -26,6 +27,8 @@ export const carregarBarbeariaPublica = cache(async (slug: string) => {
     promocoes: (promo.data ?? []) as Promocao[],
     horarios: (hs.data ?? []) as HorarioSemana[],
     extras: (ex.data ?? []) as HorarioExtra[],
+    // serviços que cada profissional NÃO faz (sem linha = faz todos)
+    naoFaz: (nf.data ?? []) as NaoFaz[],
   };
 });
 

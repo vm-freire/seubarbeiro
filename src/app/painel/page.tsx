@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CopiarTexto } from "@/components/CopiarTexto";
 import { agendamentosEntre, configuracaoAgenda } from "@/lib/consultasPainel";
 import { hora, moeda, quando } from "@/lib/formatar";
+import { faseLembrete, textoAntecedencia } from "@/lib/lembrete";
 import { exigirBarbearia } from "@/lib/painel";
 import { linkAgendamento, linkConfirmacao } from "@/lib/site";
 import { hojeLocal, somarDias } from "@/lib/tempo";
@@ -26,13 +27,11 @@ export default async function Page() {
     .filter((a) => a.status === "concluido")
     .reduce((t, a) => t + a.agendamento_itens.reduce((x, i) => x + Number(i.preco_cobrado), 0), 0);
 
-  // Lembretes: ainda sem resposta, começam nas próximas (lembrete + 60) min
-  // e o lembrete não foi mandado. "Agora" = dentro do tempo configurado.
-  const janelaMs = (b.lembrete_minutos + 60) * 60_000;
-  const lembretes = [...lista, ...amanha].filter((a) => {
-    const t = new Date(a.inicio).getTime();
-    return a.status === "agendado" && !a.lembrete_enviado_em && t > agora && t - agora <= janelaMs;
-  });
+  // Lembretes: o link "Vou / Não vou" só vale a partir de lembrete_minutos
+  // antes do horário. Quem marcou já dentro desse tempo não recebe lembrete.
+  const lembretes = [...lista, ...amanha].filter(
+    (a) => a.status === "agendado" && !a.lembrete_enviado_em && faseLembrete(a, b.lembrete_minutos, agora) === "aberta"
+  );
 
   const link = linkAgendamento(b.slug);
   // barbeiro só recebe os próprios horários (RLS), então não precisa do nome do profissional
@@ -73,7 +72,7 @@ export default async function Page() {
         <section className="cartao selo-amarelo">
           <h2 className="subtitulo">Lembretes para enviar</h2>
           <p className="mb-3 text-sm">
-            Toque em “Enviar” para abrir o WhatsApp com a mensagem pronta. O cliente responde Vou/Não vou pelo link e a agenda se atualiza sozinha.
+            Faltam {textoAntecedencia(b.lembrete_minutos)} ou menos para estes horários. Toque em “Enviar” para abrir o WhatsApp com a mensagem pronta: o cliente responde Vou/Não vou pelo link e a agenda se atualiza sozinha.
           </p>
           <ul className="space-y-2">
             {lembretes.map((a) => {
@@ -92,10 +91,10 @@ export default async function Page() {
                 <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-superficie p-2 text-texto">
                   <span className="text-sm">
                     <strong>{hora(a.inicio, b.fuso)}</strong> · {a.clientes?.nome}{" "}
-                    <span className="text-suave">({minutos <= b.lembrete_minutos ? "envie agora" : `em ${minutos} min`})</span>
+                    <span className="text-suave">(daqui a {minutos} min)</span>
                   </span>
                   {href ? (
-                    <BotaoWhats href={href} agendamentoId={a.id} rotulo="Enviar" destaque={minutos <= b.lembrete_minutos} />
+                    <BotaoWhats href={href} agendamentoId={a.id} rotulo="Enviar" destaque />
                   ) : (
                     <span className="text-xs text-suave">sem WhatsApp cadastrado</span>
                   )}

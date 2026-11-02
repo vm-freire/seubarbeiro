@@ -102,7 +102,12 @@ ok((await como(B, `select id from clientes`)).rows.length === 1, "cliente vê s�
 const tok = (await db.query(`select token_confirmacao t from agendamentos where id=$1`, [ag1])).rows[0].t;
 const info = (await como(null, `select confirmacao_ver($1) j`, [tok])).rows[0].j;
 ok(info.cliente === "Pedro" && info.servicos[0] === "Corte de cabelo", "página de confirmação mostra dados");
+ok(info.barbearia.lembrete_minutos === 60, "lembrete padrão de 60 min");
+ok((await erro(null, `select confirmacao_responder($1, true)`, [tok]))?.includes("abre"), "Vou antes da hora do lembrete é recusado");
+// traz o horário para daqui a 30 min (dentro da janela do lembrete)
+await db.query(`update agendamentos set inicio = now() + interval '30 minutes', fim = now() + interval '60 minutes' where id=$1`, [ag1]);
 ok((await como(null, `select confirmacao_responder($1, true) s`, [tok])).rows[0].s === "confirmado", "Vou → confirmado");
+await db.query(`update agendamentos set inicio = $2::timestamptz, fim = $2::timestamptz + interval '30 minutes' where id=$1`, [ag1, ts(ter, "10:00")]);
 ok((await como(null, `select confirmacao_responder($1, false) s`, [tok])).rows[0].s === "cancelado", "Não vou → cancelado");
 ok((await erro(null, `select confirmacao_responder($1, true)`, [tok]))?.includes("não pode mais"), "cancelado não volta pelo link");
 ok(!!(await agendar(C, ts(ter, "10:00"), [sv["Sobrancelha"]])).rows[0].id, "horário liberado pode ser marcado de novo");
@@ -141,6 +146,13 @@ ok((await como(D, `select id from agendamentos`)).rows.length === 0, "barbeiro n
 const agD = (await agendarCom(B, profD.id, ts(ter, "15:00"), [sv["Barba"]])).rows[0].id;
 ok((await como(D, `select id from agendamentos`)).rows.length === 1, "barbeiro vê o agendamento dele");
 ok((await como(D, `select nome from clientes`)).rows.map((r) => r.nome).join() === "Pedro", "barbeiro vê só os clientes que marcaram com ele");
+
+// serviços por profissional
+ok((await erro(D, `insert into profissional_nao_faz (profissional_id, servico_id, barbearia_id) values ($1, $2, $3)`, [profD.id, sv["Corte de cabelo"], barb])) !== null, "barbeiro não define os próprios serviços");
+await como(A, `insert into profissional_nao_faz (profissional_id, servico_id, barbearia_id) values ($1, $2, $3)`, [profD.id, sv["Corte de cabelo"], barb]);
+ok((await como(null, `select servico_id from profissional_nao_faz where barbearia_id=$1`, [barb])).rows.length === 1, "cliente sem login vê o que cada um não faz");
+ok((await erro(B, `select agendar($1,$2,$3::timestamptz,$4::uuid[])`, [barb, profD.id, ts(ter, "17:00"), [sv["Corte de cabelo"]]]))?.includes("não faz"), "cliente não agenda serviço que o profissional não faz");
+ok((await erro(B, `select agendar($1,$2,$3::timestamptz,$4::uuid[])`, [barb, prof.id, ts(ter, "17:00"), [sv["Corte de cabelo"]]])) === null, "com outro profissional o mesmo serviço passa");
 ok((await erro(D, `select agendar_pelo_painel($1,$2,$3::timestamptz,$4::uuid[],null,'Y','1')`, [barb, prof.id, ts(ter, "18:00"), [sv["Barba"]]]))?.includes("própria agenda"), "barbeiro não marca na agenda do outro");
 ok(!!(await como(D, `select agendar_pelo_painel($1,$2,$3::timestamptz,$4::uuid[],null,'Novo do Carlos','41977776666') id`, [barb, profD.id, ts(ter, "16:00"), [sv["Barba"]]])).rows[0].id, "barbeiro marca na própria agenda");
 ok((await como(D, `select nome from clientes`)).rows.length === 2, "barbeiro vê o cliente que cadastrou");

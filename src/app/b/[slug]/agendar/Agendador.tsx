@@ -9,7 +9,7 @@ import { precoDoDia } from "@/lib/precos";
 import { traduzirErro } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
 import { localParaDate, NOMES_DIAS_CURTOS, somarDias, diaSemana } from "@/lib/tempo";
-import type { Barbearia, HorarioExtra, HorarioSemana, Profissional, Promocao, Servico } from "@/lib/tipos";
+import type { Barbearia, HorarioExtra, HorarioSemana, NaoFaz, Profissional, Promocao, Servico } from "@/lib/tipos";
 
 type Ocupado = { profissional_id: string | null; inicio: string; fim: string };
 
@@ -21,6 +21,7 @@ type Props = {
     promocoes: Promocao[];
     horarios: HorarioSemana[];
     extras: HorarioExtra[];
+    naoFaz: NaoFaz[];
   };
   hoje: string;
   ultimoDia: string;
@@ -29,15 +30,24 @@ type Props = {
 };
 
 export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
-  const { barbearia: b, profissionais, servicos, promocoes, horarios, extras } = dados;
+  const { barbearia: b, profissionais, servicos: todosServicos, promocoes, horarios, extras, naoFaz } = dados;
+  const faz = (prof: string, servico: string) => !naoFaz.some((x) => x.profissional_id === prof && x.servico_id === servico);
   const router = useRouter();
 
-  const [escolhidos, setEscolhidos] = useState<string[]>(
-    () => inicial.s?.split(",").filter((id) => servicos.some((s) => s.id === id)) ?? []
+  const [marcados, setEscolhidos] = useState<string[]>(
+    () => inicial.s?.split(",").filter((id) => todosServicos.some((s) => s.id === id)) ?? []
   );
+  // sem profissional no link: o primeiro que faz os serviços já marcados
   const [profId, setProfId] = useState(
-    () => profissionais.find((p) => p.id === inicial.p)?.id ?? profissionais[0]?.id ?? ""
+    () =>
+      profissionais.find((p) => p.id === inicial.p)?.id ??
+      profissionais.find((p) => marcados.every((s) => faz(p.id, s)))?.id ??
+      profissionais[0]?.id ??
+      ""
   );
+  // só aparecem (e só valem) os serviços que o profissional escolhido faz
+  const servicos = todosServicos.filter((s) => faz(profId, s.id));
+  const escolhidos = marcados.filter((id) => faz(profId, id));
   const [data, setData] = useState(inicial.d ?? "");
   const [hora, setHora] = useState(inicial.h ?? "");
   const [ocupados, setOcupados] = useState<{ chave: string; lista: Ocupado[]; em: number } | null>(null);
@@ -81,21 +91,22 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
   }, [b.id, b.fuso, dataValida, profId, versao]);
 
   const carregandoHorarios = !!dataValida && ocupados?.chave !== chave;
-  const livres = useMemo(() => {
-    if (!dataValida || !duracao || ocupados?.chave !== chave) return [];
-    return livresDoDia({
-      fuso: b.fuso,
-      passoMin: b.passo_minutos,
-      horarios,
-      extras,
-      ocupados: ocupados.lista,
-      profissionalId: profId,
-      data: dataValida,
-      duracaoMin: duracao,
-      // "agora" = momento em que os horários foram carregados
-      naoAntesDe: new Date(ocupados.em + b.antecedencia_minima_min * 60_000),
-    });
-  }, [dataValida, duracao, ocupados, chave, b, horarios, extras, profId]);
+  // (o React Compiler já memoriza; cálculo leve: um dia de horários)
+  const livres =
+    !dataValida || !duracao || ocupados?.chave !== chave
+      ? []
+      : livresDoDia({
+          fuso: b.fuso,
+          passoMin: b.passo_minutos,
+          horarios,
+          extras,
+          ocupados: ocupados.lista,
+          profissionalId: profId,
+          data: dataValida,
+          duracaoMin: duracao,
+          // "agora" = momento em que os horários foram carregados
+          naoAntesDe: new Date(ocupados.em + b.antecedencia_minima_min * 60_000),
+        });
 
   const horaValida = livres.some((l) => l.hora === hora) ? hora : "";
 
@@ -183,6 +194,7 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
 
       <section>
         <h2 className="subtitulo mb-3">{n(2)}. O que você vai fazer?</h2>
+        {servicos.length === 0 && <p className="text-sm text-suave">Este profissional ainda não tem serviços cadastrados. Escolha outro.</p>}
         <div className="grid gap-2">
           {servicos.map((s) => {
             const p = precoDoDia(s, promocoes, precoData);

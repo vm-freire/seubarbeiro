@@ -20,6 +20,8 @@ suporte mostra tudo sem animação).
 2. No Supabase, abra **SQL Editor**, cole o conteúdo de
    `supabase/migrations/001_inicial.sql` e rode. Depois faça o mesmo com
    `002_equipe_fotos.sql` (equipe, convites, fotos e relatórios por profissional).
+   E por último `003_servicos_profissional_lembrete.sql` (serviços de cada profissional e
+   “Vou / Não vou” liberado só 1 hora antes).
 3. Em **Authentication → Sign In / Providers → Email**: para testar mais
    rápido, desligue **Confirm email**. Em produção, deixe ligado e configure
    em **URL Configuration** o endereço do site.

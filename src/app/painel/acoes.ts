@@ -282,6 +282,28 @@ export async function salvarProfissional(_: ResultadoAcao, d: FormData): Promise
   return semEfeito(data) ?? { ok: id ? "Profissional atualizado." : "Profissional adicionado. Defina os horários dele em Horários e folgas." };
 }
 
+/** Dono: quais serviços cada profissional faz (grava os que ele NÃO faz). */
+export async function salvarServicosDoProfissional(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
+  const { supabase, barbearia } = await exigirDono();
+  const profissionalId = txt(d, "profissional_id");
+  const feitos = new Set(d.getAll("servicos").map(String));
+  const { data: servicos, error: e1 } = await supabase.from("servicos").select("id").eq("barbearia_id", barbearia.id);
+  if (e1) return falha(e1);
+  if (feitos.size === 0) return { erro: "Marque pelo menos um serviço." };
+  const naoFaz = (servicos ?? [])
+    .filter((s) => !feitos.has(s.id))
+    .map((s) => ({ profissional_id: profissionalId, servico_id: s.id, barbearia_id: barbearia.id }));
+  const { error: e2 } = await supabase.from("profissional_nao_faz").delete().eq("profissional_id", profissionalId);
+  if (e2) return falha(e2);
+  if (naoFaz.length) {
+    const { error: e3 } = await supabase.from("profissional_nao_faz").insert(naoFaz);
+    if (e3) return falha(e3);
+  }
+  revalidatePath("/painel/equipe");
+  revalidatePath(`/b/${barbearia.slug}`, "layout");
+  return { ok: "Serviços atualizados." };
+}
+
 /** Meu perfil (o dono também pode editar o perfil de qualquer profissional). */
 export async function salvarPerfil(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
   const { supabase, dono, meuProfissional } = await exigirBarbearia();

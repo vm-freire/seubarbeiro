@@ -71,7 +71,7 @@ export function mensagemAgendado(p: {
     `Olá, ${nome}! Seu horário na ${p.barbearia} está marcado:`,
     `*${p.quando}* (${p.servicos.join(" + ")}).`,
     ``,
-    `Para confirmar, cancelar ou ver a rota no mapa:`,
+    `Perto do horário você recebe o link para confirmar. Detalhes e rota no mapa:`,
     p.linkConfirmacao,
   ].join("\n");
 }

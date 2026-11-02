@@ -7,8 +7,8 @@ import { dataCurta } from "@/lib/formatar";
 import { exigirDono } from "@/lib/painel";
 import { urlSite } from "@/lib/site";
 import { partesLocais } from "@/lib/tempo";
-import type { Profissional } from "@/lib/tipos";
-import { apagarConvite, criarConvite, removerDaEquipe, salvarProfissional } from "../acoes";
+import type { NaoFaz, Profissional, Servico } from "@/lib/tipos";
+import { apagarConvite, criarConvite, removerDaEquipe, salvarProfissional, salvarServicosDoProfissional } from "../acoes";
 
 export const metadata = { title: "Equipe" };
 
@@ -16,11 +16,16 @@ type Convite = { id: string; codigo: string; profissional_id: string | null; exp
 
 export default async function Page() {
   const { supabase, barbearia: b, user } = await exigirDono();
-  const [{ data: pr }, { data: cv }] = await Promise.all([
+  const [{ data: pr }, { data: cv }, { data: sv }, { data: nf }] = await Promise.all([
     supabase.from("profissionais").select("*").eq("barbearia_id", b.id).order("ativo", { ascending: false }).order("ordem").order("nome"),
     supabase.from("convites").select("*").eq("barbearia_id", b.id).is("usado_em", null).gt("expira_em", new Date().toISOString()).order("criado_em", { ascending: false }),
+    supabase.from("servicos").select("*").eq("barbearia_id", b.id).eq("ativo", true).order("ordem").order("nome"),
+    supabase.from("profissional_nao_faz").select("profissional_id, servico_id").eq("barbearia_id", b.id),
   ]);
   const profissionais = (pr ?? []) as Profissional[];
+  const servicos = (sv ?? []) as Servico[];
+  const naoFaz = (nf ?? []) as NaoFaz[];
+  const faz = (p: string, s: string) => !naoFaz.some((x) => x.profissional_id === p && x.servico_id === s);
   const convites = (cv ?? []) as Convite[];
   const linkConvite = (c: Convite) => `${urlSite()}/convite/${c.codigo}`;
   const msgConvite = (c: Convite) =>
@@ -95,6 +100,24 @@ export default async function Page() {
                   </label>
                   <BotaoEnviar className="btn btn-pequeno">Salvar</BotaoEnviar>
                 </FormularioAcao>
+                {p.ativo && servicos.length > 0 && (
+                  <FormularioAcao acao={salvarServicosDoProfissional} className="mt-3 border-t border-borda pt-3">
+                    <input type="hidden" name="profissional_id" value={p.id} />
+                    <fieldset>
+                      <legend className="mb-2 text-sm font-semibold">Serviços que {p.nome.split(" ")[0]} faz</legend>
+                      <div className="flex flex-wrap gap-2">
+                        {servicos.map((s) => (
+                          <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded-full border border-borda bg-superficie-2 px-3 py-1.5 text-sm has-[:checked]:border-destaque">
+                            <input type="checkbox" name="servicos" value={s.id} defaultChecked={faz(p.id, s.id)} className="accent-[var(--destaque)]" />
+                            {s.nome}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <p className="ajuda mt-2">O cliente só consegue marcar com {p.nome.split(" ")[0]} os serviços marcados aqui.</p>
+                    <BotaoEnviar className="btn btn-pequeno mt-2">Salvar serviços</BotaoEnviar>
+                  </FormularioAcao>
+                )}
                 {!souEu && (
                   <div className="mt-3 flex flex-wrap gap-2 border-t border-borda pt-3">
                     {!p.user_id && p.ativo && (

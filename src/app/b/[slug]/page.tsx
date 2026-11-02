@@ -9,7 +9,7 @@ import { WhatsFlutuante } from "@/components/WhatsFlutuante";
 import { assinaturaLiberada } from "@/lib/assinatura";
 import { carregarBarbeariaPublica } from "@/lib/dados";
 import { CATEGORIAS, moeda } from "@/lib/formatar";
-import { linkRota } from "@/lib/maps";
+import { linkMapaEmbutido, linkRota } from "@/lib/maps";
 import { precoDoDia } from "@/lib/precos";
 import { hojeLocal, NOMES_DIAS } from "@/lib/tempo";
 import { linkWhats, telefoneBonito } from "@/lib/whatsapp";
@@ -30,6 +30,7 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
 
   const hoje = hojeLocal(b.fuso);
   const rota = linkRota(b);
+  const mapa = linkMapaEmbutido(b);
   const whats = linkWhats(b.whatsapp, "Olá! Vim pelo site de agendamento.");
   const liberada = assinaturaLiberada(b);
   const agendar = `/b/${b.slug}/agendar`;
@@ -73,7 +74,7 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
               )}
               {rota && (
                 <a href={rota} target="_blank" rel="noopener noreferrer" className="btn border-white/30 bg-white/10 px-6 text-base text-[#f3ede2] hover:border-white">
-                  📍 Como chegar
+                  Como chegar
                 </a>
               )}
             </div>
@@ -192,8 +193,17 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
             <h2 className="subtitulo mb-3">Onde estamos</h2>
             {(b.endereco || b.cidade) && <p>{[b.endereco, b.cidade].filter(Boolean).join(" · ")}</p>}
             {b.whatsapp && <p className="mt-1 text-sm text-suave">WhatsApp {telefoneBonito(b.whatsapp)}</p>}
+            {mapa && (
+              <iframe
+                src={mapa}
+                title={`Mapa: ${b.nome}`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="mt-4 aspect-[4/3] w-full rounded-xl border border-borda bg-superficie-2"
+              />
+            )}
             <div className="mt-auto flex flex-wrap gap-2 pt-5">
-              {rota && <a href={rota} target="_blank" rel="noopener noreferrer" className="btn-primario">📍 Traçar rota no Google Maps</a>}
+              {rota && <a href={rota} target="_blank" rel="noopener noreferrer" className="btn-primario">Traçar rota no Google Maps</a>}
               {b.instagram && (
                 <a href={`https://instagram.com/${b.instagram.replace(/^@/, "")}`} target="_blank" rel="noopener noreferrer" className="btn">
                   Instagram

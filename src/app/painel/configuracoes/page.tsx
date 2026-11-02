@@ -73,7 +73,7 @@ export default async function Page() {
           ))}
         </div>
         <p className="ajuda mt-3">
-          Os lembretes antes do horário aparecem na tela “Hoje”: um toque abre o WhatsApp com a mensagem pronta e o link “Vou / Não vou”.
+          Perto de cada horário (o tempo do lembrete, abaixo), o lembrete aparece na tela “Hoje”: um toque abre o WhatsApp com a mensagem pronta e o link “Vou / Não vou”.
         </p>
       </section>
 
@@ -126,7 +126,7 @@ export default async function Page() {
               min={10}
               max={1440}
               defaultValue={b.lembrete_minutos}
-              ajuda="Quando o lembrete aparece em “Hoje”."
+              ajuda="A partir de quanto tempo antes o link “Vou / Não vou” vale (padrão: 60). Quem marcar já dentro desse tempo não recebe lembrete."
             />
           </div>
           <BotaoEnviar>Salvar configurações</BotaoEnviar>
