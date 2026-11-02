@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { liberarSom } from "@/lib/somAviso";
+import { mudarSomDoManequim, silenciarMaquina, somCabeloCaindo, somCorte, zumbidoMaquina } from "@/lib/somCorte";
 
 /**
- * Brincadeira da página da barbearia: um manequim de cabelo comprido.
+ * Brincadeira da página da barbearia: um manequim de cabelo e barba compridos.
  * Onde o mouse (ou o dedo) passa, a "máquina" corta os fios naquele ponto
- * e os pedaços caem. Tudo desenhado num <canvas>; nada é salvo.
+ * e os pedaços caem. A barba vai por passadas: a 1ª deixa a barba feita
+ * (rente), a 2ª tira tudo. Tudo desenhado num <canvas>; nada é salvo.
  */
 
 // medidas lógicas do desenho (o canvas escala para a largura da tela)
@@ -18,6 +21,8 @@ const RAIO_CORTE = 11;
 const TOCO = 0.35; // o que sobra de fio depois de "zerar"
 
 type Fio = { pts: [number, number][]; atual: number; total: number; cor: string; largura: number };
+// barba: 2 = grande, 1 = feita (rente), 0 = sem barba
+type FioBarba = Fio & { nivel: 0 | 1 | 2; passada: number; feitaEm: number };
 type Pedaco = { pts: [number, number][]; vx: number; vy: number; dx: number; dy: number; giro: number; vida: number; cor: string; largura: number };
 
 function dentroDoRosto(x: number, y: number, folga = 1) {
@@ -63,6 +68,43 @@ function criarFios(): Fio[] {
     fios.push({ pts, atual: PASSOS, total: PASSOS, cor: cores[i % cores.length], largura: 1.3 + Math.random() * 0.9 });
   }
   return fios;
+}
+
+const CORES_BARBA = ["#2a1a10", "#33200f", "#3d2614", "#24160c", "#4a2f19"];
+
+function criarBarba(): FioBarba[] {
+  const barba: FioBarba[] = [];
+  let tentativas = 0;
+  while (barba.length < 300 && tentativas++ < 5000) {
+    // raiz em algum ponto da metade de baixo do rosto
+    const x = CAB.x + (Math.random() * 2 - 1) * CAB.rx;
+    const y = CAB.y + Math.random() * CAB.ry;
+    if (!dentroDoRosto(x, y, 0.97)) continue;
+    const rel = Math.abs(x - CAB.x) / CAB.rx;
+    // contorno da barba: nas costeletas começa na altura da orelha, no meio logo abaixo do nariz
+    if (y < CAB.y + 8 + 32 * (1 - rel * rel)) continue;
+    // deixa a boca de fora
+    if (Math.abs(x - CAB.x) < 17 && y > CAB.y + 48 && y < CAB.y + 61) continue;
+    const bigode = y < CAB.y + 49 && Math.abs(x - CAB.x) < 28;
+    const passos = bigode ? 3 : 7;
+    const passo = bigode ? 5 : 9 + Math.random() * 2;
+    let px = x;
+    let py = y;
+    let dx = bigode ? Math.sign(x - CAB.x) * 0.5 : -((x - CAB.x) / CAB.rx) * 0.2;
+    let dy = 1;
+    const pts: [number, number][] = [[px, py]];
+    for (let k = 0; k < passos; k++) {
+      const n = Math.hypot(dx, dy) || 1;
+      px += (dx / n) * passo;
+      py += (dy / n) * passo;
+      pts.push([px, py]);
+      // a barba afina para o queixo
+      dx -= ((px - CAB.x) / CAB.rx) * 0.06;
+      dy += 0.08;
+    }
+    barba.push({ pts, atual: passos, total: passos, cor: CORES_BARBA[barba.length % 5], largura: 1.2 + Math.random() * 0.8, nivel: 2, passada: -1, feitaEm: 0 });
+  }
+  return barba;
 }
 
 /** Distância do ponto p ao segmento a-b. */
@@ -168,9 +210,9 @@ function desenharManequim(ctx: CanvasRenderingContext2D) {
   ctx.stroke();
 }
 
-/** Corta os fios que a máquina tocou (segmento a-b). Devolve se algo mudou. */
+/** Corta os fios que a máquina tocou (segmento a-b). Devolve quantos fios foram cortados. */
 function cortarFios(fios: Fio[], pedacos: Pedaco[], ax: number, ay: number, bx: number, by: number) {
-  let mudou = false;
+  let mudou = 0;
   for (const f of fios) {
     const ate = Math.floor(f.atual);
     for (let k = 1; k <= ate; k++) {
@@ -184,12 +226,104 @@ function cortarFios(fios: Fio[], pedacos: Pedaco[], ax: number, ay: number, bx: 
           pedacos.push({ pts: queda, vx: (Math.random() - 0.5) * 1.6, vy: -0.5 - Math.random(), dx: 0, dy: 0, giro: 0, vida: 1, cor: f.cor, largura: f.largura });
         }
         f.atual = novo;
-        mudou = true;
+        mudou++;
       }
       break;
     }
   }
   return mudou;
+}
+
+/**
+ * Passa a máquina na barba. 1ª passada: barba grande vira barba feita.
+ * 2ª passada: tira a barba feita. Enquanto a passada ainda está aparando
+ * barba grande (podeRaspar = false), ela não raspa a barba feita ao lado:
+ * assim dá para fazer a barba toda em várias passadas sem "pelar" o rosto.
+ * Devolve se encostou na barba e quantos fios aparou/raspou.
+ */
+function cortarBarba(barba: FioBarba[], pedacos: Pedaco[], passada: number, podeRaspar: boolean, ax: number, ay: number, bx: number, by: number) {
+  let encostou = false;
+  let aparados = 0;
+  const tocadas: FioBarba[] = [];
+  const agora = performance.now();
+  for (const f of barba) {
+    if (f.nivel === 0) continue;
+    // barba grande: qualquer ponto do fio; barba feita: só a raiz (rente à pele)
+    const ate = f.nivel === 2 ? Math.floor(f.atual) : 0;
+    let tocou = false;
+    for (let k = 0; k <= ate && !tocou; k++) tocou = distSeg(f.pts[k][0], f.pts[k][1], ax, ay, bx, by) < RAIO_CORTE + 2;
+    if (!tocou) continue;
+    encostou = true;
+    if (f.passada === passada) continue;
+    if (f.nivel === 1) {
+      // acabou de ser aparada (ex.: volta do vai-e-vem): ainda não raspa
+      if (agora - f.feitaEm > 600) tocadas.push(f);
+      continue;
+    }
+    f.passada = passada;
+    const queda = f.pts.slice(0, Math.ceil(f.atual) + 1).map(([x, y]) => [x, y] as [number, number]);
+    if (queda.length > 1 && pedacos.length < 400) {
+      pedacos.push({ pts: queda, vx: (Math.random() - 0.5) * 1.4, vy: -0.3 - Math.random() * 0.6, dx: 0, dy: 0, giro: 0, vida: 1, cor: f.cor, largura: f.largura });
+    }
+    f.nivel = 1;
+    f.feitaEm = agora;
+    f.atual = 0;
+    aparados++;
+  }
+  let raspados = 0;
+  if (podeRaspar && aparados === 0) {
+    for (const f of tocadas) {
+      f.passada = passada;
+      f.nivel = 0;
+      raspados++;
+    }
+  }
+  return { encostou, aparados, raspados };
+}
+
+function desenharBarba(ctx: CanvasRenderingContext2D, barba: FioBarba[]) {
+  // barba feita: sombra rente à pele, um pontinho por fio
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(CAB.x, CAB.y, CAB.rx, CAB.ry, 0, 0, Math.PI * 2);
+  ctx.clip();
+  // um único caminho com todos os círculos: a sombra fica uniforme (sem manchas onde sobrepõe)
+  ctx.fillStyle = "rgba(58, 36, 20, 0.32)";
+  ctx.beginPath();
+  for (const f of barba) {
+    if (f.nivel === 0) continue;
+    ctx.moveTo(f.pts[0][0] + 7, f.pts[0][1]);
+    ctx.arc(f.pts[0][0], f.pts[0][1], 7, 0, Math.PI * 2);
+  }
+  ctx.fill("nonzero");
+  ctx.fillStyle = "rgba(36, 22, 12, 0.45)";
+  for (const f of barba) {
+    if (f.nivel === 0) continue;
+    // pontinhos dos pelos, sempre nos mesmos lugares para não "piscar"
+    for (let k = 1; k <= 3; k++) {
+      const ox = Math.sin(f.pts[1][0] * k * 7.3) * 4;
+      const oy = Math.cos(f.pts[1][1] * k * 5.1) * 4;
+      ctx.fillRect(f.pts[0][0] + ox - 0.5, f.pts[0][1] + oy - 0.5, 1, 1);
+    }
+  }
+  ctx.restore();
+  // barba grande por cima
+  for (const f of barba) {
+    if (f.nivel !== 2 || f.atual <= 0) continue;
+    ctx.strokeStyle = f.cor;
+    ctx.lineWidth = f.largura;
+    desenharFio(ctx, f.pts, f.atual);
+  }
+}
+
+function estadoBarba(barba: FioBarba[]) {
+  const n = barba.length || 1;
+  const grande = barba.filter((f) => f.nivel === 2).length / n;
+  const sem = barba.filter((f) => f.nivel === 0).length / n;
+  if (sem > 0.9) return "Barba: tirada";
+  if (grande > 0.9) return "Barba: grande";
+  if (grande < 0.25 && sem < 0.25) return "Barba: feita";
+  return "Barba: aparando…";
 }
 
 function porcentagemCortada(fios: Fio[]) {
@@ -198,7 +332,7 @@ function porcentagemCortada(fios: Fio[]) {
 }
 
 /** Anima os pedaços caindo e o cabelo crescendo. Devolve se ainda tem o que animar. */
-function passoAnimacao(fios: Fio[], pedacos: Pedaco[], crescendo: boolean) {
+function passoAnimacao(fios: Fio[], barba: FioBarba[], pedacos: Pedaco[], crescendo: boolean) {
   for (const p of pedacos) {
     p.vy += 0.35;
     p.dx += p.vx;
@@ -213,6 +347,16 @@ function passoAnimacao(fios: Fio[], pedacos: Pedaco[], crescendo: boolean) {
         falta = true;
       }
     }
+    for (const f of barba) {
+      if (f.nivel < 2) {
+        f.nivel = 2;
+        f.atual = 0;
+      }
+      if (f.atual < f.total) {
+        f.atual = Math.min(f.total, f.atual + 0.2);
+        falta = true;
+      }
+    }
   }
   return falta;
 }
@@ -220,12 +364,26 @@ function passoAnimacao(fios: Fio[], pedacos: Pedaco[], crescendo: boolean) {
 export function ManequimCorte() {
   const tela = useRef<HTMLCanvasElement>(null);
   const fios = useRef<Fio[]>([]);
+  const barba = useRef<FioBarba[]>([]);
   const pedacos = useRef<Pedaco[]>([]);
   const anterior = useRef<[number, number] | null>(null);
+  const direcao = useRef<[number, number] | null>(null);
+  const passada = useRef(0);
+  const passadaAparou = useRef(-1); // última passada que aparou barba grande
   const quadro = useRef(0);
   const crescendo = useRef(false);
   const desenhar = useRef<() => void>(() => {});
   const [cortado, setCortado] = useState(0);
+  const [textoBarba, setTextoBarba] = useState("Barba: grande");
+  const [mudo, setMudo] = useState(false);
+
+  useEffect(() => {
+    const parar = liberarSom();
+    return () => {
+      parar();
+      silenciarMaquina();
+    };
+  }, []);
 
   useEffect(() => {
     const c = tela.current;
@@ -234,6 +392,7 @@ export function ManequimCorte() {
     if (!ctx) return;
     const calma = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     fios.current = criarFios();
+    barba.current = criarBarba();
 
     const ajustar = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -249,6 +408,7 @@ export function ManequimCorte() {
       desenharManequim(ctx!);
       ctx!.lineCap = "round";
       ctx!.lineJoin = "round";
+      desenharBarba(ctx!, barba.current);
       for (const f of fios.current) {
         ctx!.strokeStyle = f.cor;
         ctx!.lineWidth = f.largura;
@@ -266,7 +426,7 @@ export function ManequimCorte() {
     }
 
     function animar() {
-      const falta = passoAnimacao(fios.current, pedacos.current, crescendo.current);
+      const falta = passoAnimacao(fios.current, barba.current, pedacos.current, crescendo.current);
       pedacos.current = pedacos.current.filter((p) => p.vida > 0 && p.dy < A + 200);
       crescendo.current = falta;
       pintar();
@@ -288,11 +448,22 @@ export function ManequimCorte() {
   }, []);
 
   function cortar(ax: number, ay: number, bx: number, by: number) {
-    if (!cortarFios(fios.current, pedacos.current, ax, ay, bx, by)) return;
+    const antes = pedacos.current.length;
+    const cabelo = cortarFios(fios.current, pedacos.current, ax, ay, bx, by);
+    const b = cortarBarba(barba.current, pedacos.current, passada.current, passadaAparou.current !== passada.current, ax, ay, bx, by);
+    if (b.aparados) passadaAparou.current = passada.current;
+    // saiu da barba: a próxima vez que encostar é outra passada
+    if (!b.encostou) passada.current++;
+    zumbidoMaquina(cabelo > 0 || b.encostou);
+    if (!cabelo && !b.aparados && !b.raspados) return;
+    somCorte();
+    somCabeloCaindo(pedacos.current.length - antes);
     crescendo.current = false;
     desenhar.current();
     const pct = porcentagemCortada(fios.current);
     setCortado((v) => (v === pct ? v : pct));
+    const tb = estadoBarba(barba.current);
+    setTextoBarba((v) => (v === tb ? v : tb));
   }
 
   function ponto(e: React.PointerEvent<HTMLCanvasElement>): [number, number] {
@@ -305,15 +476,35 @@ export function ManequimCorte() {
     if (e.pointerType === "touch" && !e.buttons) return;
     const p = ponto(e);
     const a = anterior.current ?? p;
+    // vai-e-volta também conta como nova passada
+    const v: [number, number] = [p[0] - a[0], p[1] - a[1]];
+    if (Math.hypot(v[0], v[1]) > 1.5) {
+      const d = direcao.current;
+      if (d && d[0] * v[0] + d[1] * v[1] < 0) passada.current++;
+      direcao.current = v;
+    }
     cortar(a[0], a[1], p[0], p[1]);
     anterior.current = p;
+  }
+
+  function soltar() {
+    anterior.current = null;
+    direcao.current = null;
+    passada.current++;
+    silenciarMaquina();
   }
 
   function crescer() {
     crescendo.current = true;
     pedacos.current = [];
     setCortado(0);
+    setTextoBarba("Barba: grande");
     desenhar.current();
+  }
+
+  function alternarSom() {
+    mudarSomDoManequim(!mudo);
+    setMudo(!mudo);
   }
 
   return (
@@ -325,18 +516,24 @@ export function ManequimCorte() {
           anterior.current = ponto(e);
           mover(e);
         }}
-        onPointerLeave={() => (anterior.current = null)}
+        onPointerLeave={soltar}
         onPointerUp={(e) => {
-          if (e.pointerType === "touch") anterior.current = null;
+          if (e.pointerType === "touch") soltar();
         }}
         className="aspect-[360/420] w-full max-w-sm touch-none select-none"
         role="img"
-        aria-label="Manequim de cabelo comprido: passe o mouse ou o dedo no cabelo para cortar"
+        aria-label="Manequim de cabelo e barba compridos: passe o mouse ou o dedo para cortar"
       />
-      <div className="flex flex-wrap items-center justify-center gap-3" aria-live="polite">
+      <div className="flex flex-wrap items-center justify-center gap-2" aria-live="polite">
         <span className="selo selo-cinza tabular-nums">{cortado >= 85 ? "Ficou na régua! ✂" : `Cabelo cortado: ${cortado}%`}</span>
-        <button type="button" className="btn btn-pequeno" onClick={crescer} disabled={cortado === 0}>
+        <span className="selo selo-cinza">{textoBarba}</span>
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <button type="button" className="btn btn-pequeno" onClick={crescer} disabled={cortado === 0 && textoBarba === "Barba: grande"}>
           Deixar crescer de novo
+        </button>
+        <button type="button" className="btn btn-pequeno" onClick={alternarSom} aria-pressed={!mudo}>
+          {mudo ? "🔇 Sem som" : "🔊 Som ligado"}
         </button>
       </div>
     </div>
