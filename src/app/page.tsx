@@ -6,7 +6,7 @@ import { Rodape } from "@/components/Rodape";
 
 const recursos = [
   ["01", "Agenda pelo link", "O cliente escolhe o barbeiro, o serviço, o dia e o horário pelo celular. Sem ligação, sem conversa longa."],
-  ["02", "Confirmação no WhatsApp", "Antes do horário ele responde Vou ou Não vou. Se não vier, o horário volta a ficar livre."],
+  ["02", "Aviso na hora", "Marcou ou desmarcou, o painel avisa com som. Se o cliente desmarcar, o horário volta a ficar livre."],
   ["03", "Sua equipe", "Convide seus barbeiros. Cada um cuida da própria agenda; você enxerga tudo."],
   ["04", "Preços e promoções", "Tabela de serviços, combos e promoções por dia da semana ou período."],
   ["05", "Fechamento de caixa", "Cortes, barbas e sobrancelhas do dia, e quanto entrou no Pix, débito, crédito e dinheiro."],
@@ -38,7 +38,7 @@ export default function Home() {
               <span className="entrar block" style={{ "--atraso": "280ms" } as React.CSSProperties}>Sem furo.</span>
             </h1>
             <p className="entrar mt-6 max-w-md text-lg text-suave" style={{ "--atraso": "380ms" } as React.CSSProperties}>
-              Seus clientes marcam pelo link, confirmam pelo WhatsApp e você fecha o caixa do dia com um toque.
+              Seus clientes marcam pelo link, você recebe o aviso na hora e fecha o caixa do dia com um toque.
             </p>
             <div className="entrar mt-8 flex flex-wrap gap-3" style={{ "--atraso": "480ms" } as React.CSSProperties}>
               <Link href="/cadastro?tipo=barbeiro" className="btn-primario px-7 text-base">Cadastrar minha barbearia</Link>
@@ -47,7 +47,7 @@ export default function Home() {
             <p className="entrar mt-3 text-sm text-suave" style={{ "--atraso": "560ms" } as React.CSSProperties}>Grátis durante o período de testes.</p>
           </div>
 
-          {/* "Celular" com a mensagem de confirmação: inclina em 3D seguindo o mouse */}
+          {/* "Celular" com os avisos do painel: inclina em 3D seguindo o mouse */}
           <div className="entrar relative mx-auto w-full max-w-xs" style={{ "--atraso": "300ms" } as React.CSSProperties}>
             <Inclinar3D className="rounded-[2rem]">
               <div
@@ -58,21 +58,36 @@ export default function Home() {
               <div className="relative rounded-[2rem] border border-borda bg-superficie p-4" style={{ boxShadow: "var(--sombra)", transformStyle: "preserve-3d" }}>
                 <div className="camada-3d mb-3 flex items-center gap-2 border-b border-borda pb-3" style={z(24)}>
                   <LogoMarca tamanho={34} animado />
-                  <div className="leading-tight">
+                  <div className="flex-1 leading-tight">
                     <p className="text-sm font-bold">Barbearia do João</p>
-                    <p className="text-xs text-suave">por Seu Barbeiro</p>
+                    <p className="text-xs text-suave">Avisos do painel</p>
                   </div>
+                  <span className="relative grid size-9 place-items-center rounded-full border border-borda" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                      <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                    </svg>
+                    <span className="absolute -top-1 -right-1 grid size-4 place-items-center rounded-full bg-destaque text-[0.6rem] font-black text-destaque-texto">2</span>
+                  </span>
                 </div>
                 <div className="space-y-2 text-sm" style={{ transformStyle: "preserve-3d" }}>
-                  <p className="camada-3d w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2" style={z(36)}>
-                    Olá, Pedro! Seu horário é <strong>hoje às 15:00</strong> (Corte + Barba).
-                  </p>
-                  <p className="camada-3d w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2" style={z(44)}>Você vem?</p>
-                  <div className="grid grid-cols-2 gap-2 pt-1" style={{ transformStyle: "preserve-3d" }}>
-                    <span className="camada-3d rounded-full bg-[var(--verde-fundo)] py-2 text-center font-bold text-[var(--verde-texto)]" style={z(60)}>Vou ✓</span>
-                    <span className="camada-3d rounded-full border border-borda bg-superficie py-2 text-center font-semibold text-suave" style={z(52)}>Não vou</span>
+                  <div className="camada-3d flex gap-2.5 rounded-2xl bg-superficie-2 p-3" style={z(44)}>
+                    <span className="w-1 shrink-0 rounded-full bg-[var(--verde-texto)]" />
+                    <p className="leading-snug">
+                      <strong className="block">Novo horário</strong>
+                      <span className="text-suave">Pedro marcou <strong className="text-texto">hoje às 15:00</strong> (Corte + Barba)</span>
+                    </p>
                   </div>
-                  <p className="camada-3d ml-auto w-fit rounded-2xl rounded-tr-sm bg-[var(--verde-fundo)] px-3 py-2 text-[var(--verde-texto)]" style={z(40)}>Confirmado. Até lá! 💈</p>
+                  <div className="camada-3d flex gap-2.5 rounded-2xl bg-superficie-2 p-3" style={z(36)}>
+                    <span className="w-1 shrink-0 rounded-full bg-[var(--vermelho-texto)]" />
+                    <p className="leading-snug">
+                      <strong className="block">Horário desmarcado</strong>
+                      <span className="text-suave">Lucas desmarcou amanhã às 10:00</span>
+                    </p>
+                  </div>
+                  <p className="camada-3d ml-auto w-fit rounded-full bg-[var(--verde-fundo)] px-3 py-2 font-semibold text-[var(--verde-texto)]" style={z(56)}>
+                    10:00 livre de novo ✓
+                  </p>
                 </div>
               </div>
             </Inclinar3D>

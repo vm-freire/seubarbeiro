@@ -6,7 +6,7 @@ Logo vetorial: `src/components/Logo.tsx` (versão estática em
 `public/logo-seu-barbeiro.svg` e o ícone da aba em `src/app/icon.svg`).
 
 Sistema de agendamento para várias barbearias (cada uma com seu link
-`/b/<nome>`), com confirmação pelo WhatsApp, agenda do barbeiro, preços
+`/b/<nome>`), com aviso na hora para o barbeiro, agenda, preços
 e promoções e fechamento de caixa.
 
 **Stack:** Next.js 16 (App Router) + TypeScript + Tailwind 4, Supabase
@@ -20,8 +20,10 @@ suporte mostra tudo sem animação).
 2. No Supabase, abra **SQL Editor**, cole o conteúdo de
    `supabase/migrations/001_inicial.sql` e rode. Depois faça o mesmo com
    `002_equipe_fotos.sql` (equipe, convites, fotos e relatórios por profissional).
-   E por último `003_servicos_profissional_lembrete.sql` (serviços de cada profissional e
-   “Vou / Não vou” liberado só 1 hora antes).
+   Depois, na ordem, `003` (serviços de cada profissional), `004` (galeria e
+   Sobre nós), `005` (conta de cliente x conta de barbeiro) e `006` (avisos do
+   painel e WhatsApp sem repetir). As partes de “lembrete” da 003 ficaram no
+   banco, mas o site não usa mais.
 3. Em **Authentication → Sign In / Providers → Email**: para testar mais
    rápido, desligue **Confirm email**. Em produção, deixe ligado e configure
    em **URL Configuration** o endereço do site.
@@ -40,10 +42,11 @@ suporte mostra tudo sem animação).
 - Barbearia de um profissional só: o dono é o único profissional.
 - **Cliente:** abre o link → escolhe o profissional (foto, nome e título) → serviços, dia e hora → entra ou cria conta
   (nome, WhatsApp, e-mail, senha; fica conectado no aparelho) → recebe a
-  página do horário (`/c/<código>`) com **Vou / Não vou** e rota no Google Maps.
-- **Confirmação:** a tela **Hoje** do painel lista os lembretes. Um toque abre
-  o WhatsApp com a mensagem pronta. “Não vou” libera o horário na hora; sem
-  resposta fica **amarelo**, “Vou” fica **verde**.
+  página do horário (`/c/<código>`) com rota no Google Maps e o botão
+  **Desmarcar** (libera o horário na hora).
+- **Avisos:** o sino do painel avisa na hora, com som, quando um cliente marca
+  ou desmarca. Não há mais confirmação “Vou / Não vou”; o barbeiro ainda pode
+  usar “Marcar confirmado” se quiser.
 - **Caixa:** em cada horário, “Fechar atendimento” registra o valor cobrado
   (dá para dar desconto), serviços extras e a forma de pagamento. Em
   **Relatórios**: hoje, semana, 7 dias, mês, ano ou qualquer período; o dono
@@ -52,11 +55,10 @@ suporte mostra tudo sem animação).
 ## WhatsApp
 
 **Agora (grátis):** resposta automática do **WhatsApp Business** com o link
-(textos prontos em Configurações) + lembretes com um toque (`wa.me`).
+(textos prontos em Configurações) + “Avisar que marcou” com um toque (`wa.me`).
 
 **Depois (pago, opcional):** API oficial da Meta (Cloud API). Daria para:
-mandar o lembrete sozinho, botões “Vou / Não vou” dentro do WhatsApp e
-agendar sem sair do WhatsApp (WhatsApp Flows). As mensagens que a
+mandar mensagens sozinho e agendar sem sair do WhatsApp (WhatsApp Flows). As mensagens que a
 barbearia inicia são cobradas pela Meta. Os pontos de troca estão em
 `src/lib/whatsapp.ts`.
 

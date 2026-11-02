@@ -59,7 +59,6 @@ export async function salvarConfiguracoes(_: ResultadoAcao, d: FormData): Promis
     instagram: opcional(d, "instagram"),
     passo_minutos: numero(d, "passo_minutos"),
     antecedencia_minima_min: numero(d, "antecedencia_minima_min"),
-    lembrete_minutos: numero(d, "lembrete_minutos"),
   };
   if (dados.maps_url && !/^https?:\/\//.test(dados.maps_url)) return { erro: "O link do Google Maps precisa começar com https://" };
   const { data, error } = await supabase.from("barbearias").update(dados).eq("id", barbearia.id).select("id");
@@ -452,7 +451,7 @@ export async function novoAgendamento(_: ResultadoAcao, d: FormData): Promise<Re
   });
   if (error) return falha(error);
   revalidatePath("/painel", "layout");
-  return { ok: "Agendamento criado. Use o botão do WhatsApp no horário para mandar a confirmação ao cliente." };
+  return { ok: "Agendamento criado. Se quiser, use “Avisar que marcou” para mandar os detalhes ao cliente pelo WhatsApp." };
 }
 
 const STATUS_OK = ["agendado", "confirmado", "cancelado", "faltou"];
@@ -475,12 +474,6 @@ export async function mudarStatus(d: FormData) {
 export async function excluirAgendamento(d: FormData) {
   const { supabase } = await exigirBarbearia();
   await supabase.from("agendamentos").delete().eq("id", txt(d, "id"));
-  revalidatePath("/painel", "layout");
-}
-
-export async function marcarLembrete(id: string) {
-  const { supabase } = await exigirBarbearia();
-  await supabase.from("agendamentos").update({ lembrete_enviado_em: new Date().toISOString() }).eq("id", id);
   revalidatePath("/painel", "layout");
 }
 

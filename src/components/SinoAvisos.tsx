@@ -194,7 +194,7 @@ export function SinoAvisos({ barbeariaId, userId, dono, fuso }: { barbeariaId: s
             </button>
           )}
           {avisos.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-suave">Nenhum aviso ainda. Quando um cliente marcar, desmarcar ou confirmar, aparece aqui.</p>
+            <p className="px-4 py-6 text-sm text-suave">Nenhum aviso ainda. Quando um cliente marcar ou desmarcar um horário, aparece aqui.</p>
           ) : (
             <ul className="max-h-[60vh] divide-y divide-borda overflow-y-auto">
               {avisos.map((a) => {

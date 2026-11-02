@@ -36,7 +36,7 @@ export function quando(d: Date | string, fuso = FUSO_PADRAO, agora = new Date())
 }
 
 export const STATUS = {
-  agendado: { rotulo: "Aguardando confirmação", curto: "Aguardando", cor: "amarelo" },
+  agendado: { rotulo: "Marcado", curto: "Marcado", cor: "amarelo" },
   confirmado: { rotulo: "Confirmado", curto: "Confirmado", cor: "verde" },
   concluido: { rotulo: "Atendido", curto: "Atendido", cor: "azul" },
   faltou: { rotulo: "Faltou", curto: "Faltou", cor: "vermelho" },

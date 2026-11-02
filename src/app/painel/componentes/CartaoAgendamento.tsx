@@ -3,12 +3,10 @@ import { BotaoEnviar } from "@/components/BotaoEnviar";
 import { FormularioAcao } from "@/components/FormularioAcao";
 import { SeloStatus } from "@/components/SeloStatus";
 import { hora, moeda, PAGAMENTOS, quando } from "@/lib/formatar";
-import { faseLembrete } from "@/lib/lembrete";
 import { linkConfirmacao } from "@/lib/site";
 import type { AgendamentoCompleto, Barbearia, Servico } from "@/lib/tipos";
-import { linkWhats, mensagemAgendado, mensagemLembrete, telefoneBonito } from "@/lib/whatsapp";
+import { linkWhats, mensagemAgendado, telefoneBonito } from "@/lib/whatsapp";
 import { excluirAgendamento, fecharAtendimento, mudarStatus } from "../acoes";
-import { BotaoWhats } from "./BotaoWhats";
 
 const BORDA: Record<string, string> = {
   agendado: "border-l-[var(--amarelo-texto)]",
@@ -52,9 +50,6 @@ export function CartaoAgendamento({
     linkConfirmacao: linkConfirmacao(a.token_confirmacao),
   };
   const ativo = a.status === "agendado" || a.status === "confirmado";
-  // o link "Vou / Não vou" só vale perto do horário (ver lib/lembrete.ts)
-  const janela = faseLembrete(a, barbearia.lembrete_minutos, new Date().getTime());
-  const lembrete = ativo && janela === "aberta" ? linkWhats(a.clientes?.telefone, mensagemLembrete(msg)) : null;
   const avisoMarcado = ativo ? linkWhats(a.clientes?.telefone, mensagemAgendado(msg)) : null;
   const falar = linkWhats(a.clientes?.telefone);
 
@@ -77,8 +72,6 @@ export function CartaoAgendamento({
         </div>
         <div className="flex flex-col items-end gap-1">
           <SeloStatus status={a.status} />
-          {a.status === "agendado" && a.lembrete_enviado_em && <span className="text-xs text-suave">lembrete enviado, sem resposta</span>}
-          {a.status === "agendado" && janela === "sem_lembrete" && <span className="text-xs text-suave">marcou em cima da hora (sem lembrete)</span>}
           {a.status === "concluido" && a.forma_pagamento && <span className="text-xs text-suave">{PAGAMENTOS[a.forma_pagamento]}</span>}
           {a.status === "cancelado" && a.cancelado_por && (
             <span className="text-xs text-suave">pelo {a.cancelado_por === "cliente" ? "cliente" : "barbeiro"}</span>
@@ -87,11 +80,8 @@ export function CartaoAgendamento({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {lembrete && (
-          <BotaoWhats href={lembrete} agendamentoId={a.id} rotulo={a.lembrete_enviado_em ? "Reenviar lembrete" : "Enviar lembrete"} destaque={!a.lembrete_enviado_em && a.status === "agendado"} />
-        )}
         {avisoMarcado && a.origem === "painel" && (
-          <BotaoWhats href={avisoMarcado} agendamentoId={a.id} rotulo="Avisar que marcou" marcar={false} />
+          <a href={avisoMarcado} target="_blank" rel="noopener noreferrer" className="btn btn-pequeno">Avisar que marcou</a>
         )}
         {!ativo && falar && (
           <a href={falar} target="_blank" rel="noopener noreferrer" className="btn btn-pequeno">WhatsApp</a>

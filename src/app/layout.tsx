@@ -10,7 +10,7 @@ const SCRIPT_TEMA = `try{var t=localStorage.getItem("tema");if(t==="claro"||t===
 
 export const metadata: Metadata = {
   title: { default: `${MARCA} · Agende seu horário`, template: `%s · ${MARCA}` },
-  description: "Agendamento online para barbearias, com confirmação pelo WhatsApp.",
+  description: "Agendamento online para barbearias, com aviso na hora para o barbeiro.",
   applicationName: MARCA,
 };
 

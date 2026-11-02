@@ -5,12 +5,10 @@
  *  - a barbearia cola a "mensagem de saudação" (com o link de agendamento)
  *    no WhatsApp Business dela (app gratuito: Ferramentas comerciais →
  *    Mensagem de saudação / Mensagem de ausência);
- *  - o painel monta os lembretes prontos e abre o WhatsApp com um toque
- *    (link wa.me). O cliente responde pelo link de confirmação.
- *
- * Quando for contratar a API oficial (Meta Cloud API), basta trocar o
- * "abrir wa.me" por um envio automático; os textos e o link de
- * confirmação continuam os mesmos.
+ *  - o painel monta mensagens prontas e abre o WhatsApp com um toque
+ *    (link wa.me), por exemplo para avisar o cliente de um horário
+ *    marcado pelo painel. O link do horário mostra detalhes, rota e
+ *    o botão para desmarcar.
  */
 
 export function soDigitos(s: string | null | undefined) {
@@ -40,25 +38,6 @@ export function telefoneBonito(tel: string | null | undefined) {
   return tel ?? "";
 }
 
-export function mensagemLembrete(p: {
-  cliente: string;
-  barbearia: string;
-  quando: string; // "hoje às 15:00"
-  servicos: string[];
-  linkConfirmacao: string;
-}) {
-  const nome = p.cliente.split(" ")[0];
-  return [
-    `Olá, ${nome}! Aqui é da ${p.barbearia}.`,
-    `Seu horário é ${p.quando} (${p.servicos.join(" + ")}).`,
-    ``,
-    `Você vem? Toque no link e responda *Vou* ou *Não vou*:`,
-    p.linkConfirmacao,
-    ``,
-    `Se não puder vir, avise pelo link que liberamos o horário pra outra pessoa. Obrigado!`,
-  ].join("\n");
-}
-
 export function mensagemAgendado(p: {
   cliente: string;
   barbearia: string;
@@ -71,7 +50,7 @@ export function mensagemAgendado(p: {
     `Olá, ${nome}! Seu horário na ${p.barbearia} está marcado:`,
     `*${p.quando}* (${p.servicos.join(" + ")}).`,
     ``,
-    `Perto do horário você recebe o link para confirmar. Detalhes e rota no mapa:`,
+    `Detalhes, rota no mapa e, se precisar, desmarcar:`,
     p.linkConfirmacao,
   ].join("\n");
 }

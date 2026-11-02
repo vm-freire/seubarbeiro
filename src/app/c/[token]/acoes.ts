@@ -5,12 +5,12 @@ import { traduzirErro } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 import type { ResultadoAcao } from "@/lib/tipos";
 
-export async function responder(_: ResultadoAcao, dados: FormData): Promise<ResultadoAcao> {
+/** Cliente desmarca pelo link do horário (sem precisar entrar na conta). */
+export async function desmarcar(_: ResultadoAcao, dados: FormData): Promise<ResultadoAcao> {
   const token = String(dados.get("token") ?? "");
-  const vai = dados.get("vai") === "sim";
   const supabase = await createClient();
-  const { error } = await supabase.rpc("confirmacao_responder", { p_token: token, p_vai: vai });
+  const { error } = await supabase.rpc("confirmacao_responder", { p_token: token, p_vai: false });
   if (error) return { erro: traduzirErro(error) };
   revalidatePath(`/c/${token}`);
-  return { ok: vai ? "Confirmado. Até lá!" : "Horário liberado. Obrigado por avisar!" };
+  return { ok: "Horário desmarcado. Obrigado por avisar!" };
 }

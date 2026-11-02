@@ -137,7 +137,7 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
       return;
     }
     if (telefone.replace(/\D/g, "").length < 10) {
-      setErro("Informe seu WhatsApp com DDD para a barbearia confirmar o horário.");
+      setErro("Informe seu WhatsApp com DDD para a barbearia falar com você sobre o horário.");
       return;
     }
     setEnviando(true);

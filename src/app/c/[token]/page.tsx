@@ -3,12 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SeloStatus } from "@/components/SeloStatus";
 import { dataExtensa, hora, type Status } from "@/lib/formatar";
-import { faseLembrete, textoAntecedencia } from "@/lib/lembrete";
 import { linkRota } from "@/lib/maps";
 import { createClient } from "@/lib/supabase/server";
 import { partesLocais } from "@/lib/tempo";
 import { linkWhats } from "@/lib/whatsapp";
-import { BotoesResposta } from "./BotoesResposta";
+import { BotaoDesmarcar } from "./BotaoDesmarcar";
 
 export const metadata: Metadata = { title: "Seu horário", robots: { index: false } };
 
@@ -16,7 +15,6 @@ type Info = {
   status: Status;
   inicio: string;
   fim: string;
-  criado_em: string;
   cliente: string;
   profissional: string;
   servicos: string[];
@@ -28,7 +26,6 @@ type Info = {
     maps_url: string | null;
     whatsapp: string | null;
     fuso: string;
-    lembrete_minutos: number;
   };
 };
 
@@ -48,14 +45,11 @@ export default async function Page({ params, searchParams }: PageProps<"/c/[toke
   const dia = partesLocais(new Date(info.inicio), b.fuso).data;
   const aberto = (info.status === "agendado" || info.status === "confirmado") && new Date(info.fim) > new Date();
   const rota = linkRota(b);
-  // "Vou / Não vou" só aparece a partir do tempo do lembrete (o banco também confere)
-  const fase = faseLembrete(info, b.lembrete_minutos ?? 60, new Date().getTime());
-  const antecedencia = textoAntecedencia(b.lembrete_minutos ?? 60);
   const whats = linkWhats(b.whatsapp, `Olá! Sobre meu horário de ${dataExtensa(dia)} às ${hora(info.inicio, b.fuso)}.`);
 
   return (
     <main className="mx-auto w-full max-w-md flex-1 px-4 py-10">
-      {novo === "1" && <p className="aviso selo-verde mb-6 block">Horário marcado! Guarde este link: aqui você vê o endereço e a rota.</p>}
+      {novo === "1" && <p className="aviso selo-verde mb-6 block">Horário marcado! Guarde este link: aqui você vê o endereço, a rota e, se precisar, desmarca.</p>}
       <p className="text-sm text-suave">{b.nome}</p>
       <h1 className="titulo mt-1">Olá, {info.cliente}!</h1>
 
@@ -66,21 +60,10 @@ export default async function Page({ params, searchParams }: PageProps<"/c/[toke
         <SeloStatus status={info.status} />
       </div>
 
-      {aberto && fase === "cedo" ? (
-        <section className="cartao mt-6">
-          <h2 className="font-semibold">Confirmação perto do horário</h2>
-          <p className="mt-1 text-sm text-suave">
-            {antecedencia} antes, a barbearia te manda pelo WhatsApp o link para responder <strong>Vou</strong> ou <strong>Não vou</strong>. Se precisar
-            cancelar antes disso, use <Link href="/meus-agendamentos" className="font-medium text-destaque underline">Meus horários</Link>.
-          </p>
-        </section>
-      ) : aberto && fase === "sem_lembrete" ? (
-        <p className="aviso selo-verde mt-6 block">Te esperamos! Se não puder vir, cancele em <Link href="/meus-agendamentos" className="underline">Meus horários</Link>.</p>
-      ) : aberto ? (
+      {aberto ? (
         <section className="mt-6">
-          <h2 className="subtitulo mb-3">Você vem?</h2>
-          <BotoesResposta token={token} status={info.status} />
-          <p className="ajuda mt-3">Se não puder vir, toque em “Não vou” para liberarmos o horário para outra pessoa.</p>
+          <p className="mb-3 text-sm text-suave">Não vai poder vir? Desmarque aqui para liberarmos o horário para outra pessoa.</p>
+          <BotaoDesmarcar token={token} />
         </section>
       ) : info.status === "cancelado" ? (
         <p className="mt-6 text-sm">

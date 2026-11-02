@@ -59,7 +59,7 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
       <div>
         <label className="rotulo" htmlFor="telefone">WhatsApp (com DDD)</label>
         <input id="telefone" name="telefone" type="tel" inputMode="tel" autoComplete="tel" required placeholder="(41) 99999-8888" className="campo" />
-        <p className="ajuda">{barbeiro ? "Seu WhatsApp de contato." : "É por aqui que a barbearia confirma o seu horário."}</p>
+        <p className="ajuda">{barbeiro ? "Seu WhatsApp de contato." : "É por aqui que a barbearia fala com você sobre o seu horário."}</p>
       </div>
       <div>
         <label className="rotulo" htmlFor="email">E-mail</label>
