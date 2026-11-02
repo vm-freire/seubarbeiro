@@ -4,10 +4,11 @@ import { FormularioAcao } from "@/components/FormularioAcao";
 import { livresDoDia } from "@/lib/agenda/disponibilidade";
 import { agendamentosEntre, configuracaoAgenda } from "@/lib/consultasPainel";
 import { dataExtensa, hora, moeda } from "@/lib/formatar";
-import { exigirBarbearia } from "@/lib/painel";
+import { exigirBarbearia, filtroEquipe } from "@/lib/painel";
 import { dataValida, diaSemana, hojeLocal, inicioDaSemana, NOMES_DIAS_CURTOS, partesLocais, somarDias } from "@/lib/tempo";
 import type { Cliente } from "@/lib/tipos";
 import { bloquearDia, novoAgendamento, removerBloqueio } from "../acoes";
+import { CaixaVerEquipe } from "../componentes/CaixaVerEquipe";
 import { CartaoAgendamento } from "../componentes/CartaoAgendamento";
 
 export const metadata = { title: "Agenda" };
@@ -20,15 +21,20 @@ export default async function Page({ searchParams }: PageProps<"/painel/agenda">
   const semana = inicioDaSemana(dia);
   const diasSemana = Array.from({ length: 7 }, (_, i) => somarDias(semana, i));
 
-  const [daSemana, cfg] = await Promise.all([
+  const filtro = await filtroEquipe(dono, meuProfissional);
+  const doFiltro = (id: string | null) => !filtro.soDe || id === null || id === filtro.soDe;
+  const [todosDaSemana, cfg] = await Promise.all([
     agendamentosEntre(supabase, b.id, b.fuso, semana, somarDias(semana, 6)),
     configuracaoAgenda(supabase, b.id),
   ]);
+  // dono vê só a própria agenda, a não ser que marque "Ver também a equipe"
+  const daSemana = todosDaSemana.filter((a) => doFiltro(a.profissional_id));
   const diaDe = (iso: string) => partesLocais(new Date(iso), b.fuso).data;
   const lista = daSemana.filter((a) => diaDe(a.inicio) === dia);
 
-  // barbeiro só trabalha na própria agenda (o banco garante; aqui só some da tela)
-  const ativos = cfg.profissionais.filter((p) => p.ativo && (dono || p.id === meuProfissional?.id));
+  // barbeiro só trabalha na própria agenda (o banco garante; aqui só some da tela);
+  // o dono mexe na dos outros só com "Ver também a equipe" marcado
+  const ativos = cfg.profissionais.filter((p) => p.ativo && ((dono && filtro.verEquipe) || p.id === meuProfissional?.id));
   const multiplos = ativos.length > 1;
   const profPadrao = ativos.find((p) => p.id === sp.p)?.id ?? ativos[0]?.id;
 
@@ -59,15 +65,16 @@ export default async function Page({ searchParams }: PageProps<"/painel/agenda">
     }),
   }));
 
-  const bloqueiosDoDia = cfg.bloqueios.filter((x) => diaDe(x.inicio) <= dia && diaDe(new Date(new Date(x.fim).getTime() - 1).toISOString()) >= dia);
+  const bloqueiosDoDia = cfg.bloqueios.filter((x) => doFiltro(x.profissional_id) && diaDe(x.inicio) <= dia && diaDe(new Date(new Date(x.fim).getTime() - 1).toISOString()) >= dia);
   const contaDia = (d: string) => daSemana.filter((a) => diaDe(a.inicio) === d && a.status !== "cancelado").length;
   const horaPre = typeof sp.h === "string" ? sp.h : "";
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="titulo text-4xl">{dono ? "Agenda" : "Minha agenda"}</h1>
-        <div className="flex gap-2">
+        <h1 className="titulo text-4xl">{dono && filtro.verEquipe ? "Agenda da equipe" : "Minha agenda"}</h1>
+        <div className="flex flex-wrap gap-2">
+          {filtro.podeEscolher && <CaixaVerEquipe key={String(filtro.marcado)} marcado={filtro.marcado} />}
           <Link href={`/painel/agenda?d=${somarDias(semana, -7)}`} className="btn btn-pequeno">← Semana anterior</Link>
           <Link href={`/painel/agenda?d=${hoje}`} className="btn btn-pequeno">Hoje</Link>
           <Link href={`/painel/agenda?d=${somarDias(semana, 7)}`} className="btn btn-pequeno">Próxima semana →</Link>

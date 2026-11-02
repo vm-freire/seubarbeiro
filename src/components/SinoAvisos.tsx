@@ -13,10 +13,24 @@ type Toast = Aviso & { chave: number };
 /**
  * Sino do painel: avisa na hora (Supabase Realtime) quando um cliente marca,
  * desmarca, confirma ou remarca. Mostra um cartão no canto, toca um som e
- * atualiza a página. O dono recebe os de todos; o barbeiro, só os dele (o
- * banco filtra). Não avisa a própria pessoa do que ela mesma fez.
+ * atualiza a página. O barbeiro recebe só os dele (o banco filtra); o dono
+ * também, a não ser que marque "Ver também a equipe" (soDe = null).
+ * Não avisa a própria pessoa do que ela mesma fez.
  */
-export function SinoAvisos({ barbeariaId, userId, dono, fuso }: { barbeariaId: string; userId: string; dono: boolean; fuso: string }) {
+export function SinoAvisos({
+  barbeariaId,
+  userId,
+  dono,
+  fuso,
+  soDe,
+}: {
+  barbeariaId: string;
+  userId: string;
+  dono: boolean;
+  fuso: string;
+  /** id do profissional cujos avisos aparecem (null = todos que o banco liberar) */
+  soDe: string | null;
+}) {
   const router = useRouter();
   const chaveVisto = `avisos-visto-${barbeariaId}`;
   const [avisos, setAvisos] = useState<Aviso[]>([]);
@@ -40,15 +54,15 @@ export function SinoAvisos({ barbeariaId, userId, dono, fuso }: { barbeariaId: s
   const contador = useRef(0);
 
   const buscar = useCallback(async () => {
-    const { data } = await createClient()
+    let q = createClient()
       .from("notificacoes")
       .select("*")
       .eq("barbearia_id", barbeariaId)
-      .or(`autor.is.null,autor.neq.${userId}`)
-      .order("criado_em", { ascending: false })
-      .limit(30);
+      .or(`autor.is.null,autor.neq.${userId}`);
+    if (soDe) q = q.eq("profissional_id", soDe);
+    const { data } = await q.order("criado_em", { ascending: false }).limit(30);
     return (data ?? null) as Aviso[] | null;
-  }, [barbeariaId, userId]);
+  }, [barbeariaId, userId, soDe]);
 
   // primeira carga, som e volta para a aba
   useEffect(() => {
@@ -89,6 +103,7 @@ export function SinoAvisos({ barbeariaId, userId, dono, fuso }: { barbeariaId: s
           (msg) => {
             const novo = msg.new as Aviso;
             if (novo.autor === userId) return;
+            if (soDe && novo.profissional_id !== soDe) return; // dono vendo só a própria agenda
             setAvisos((lista) => (lista.some((a) => a.id === novo.id) ? lista : [novo, ...lista].slice(0, 30)));
             const chave = ++contador.current;
             setToasts((t) => [...t.slice(-2), { ...novo, chave }]);
@@ -98,7 +113,7 @@ export function SinoAvisos({ barbeariaId, userId, dono, fuso }: { barbeariaId: s
             tocarAviso(novo.tipo);
             if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
               try {
-                new Notification(ROTULO_AVISO[novo.tipo].titulo, { body: textoAviso(novo, { comProfissional: dono, fuso }), tag: novo.id });
+                new Notification(ROTULO_AVISO[novo.tipo].titulo, { body: textoAviso(novo, { comProfissional: dono && !soDe, fuso }), tag: novo.id });
               } catch {
                 // celular sem suporte a aviso fora do service worker: fica o aviso na página
               }
@@ -112,7 +127,7 @@ export function SinoAvisos({ barbeariaId, userId, dono, fuso }: { barbeariaId: s
       ativo = false;
       if (canal) void supabase.removeChannel(canal);
     };
-  }, [barbeariaId, userId, dono, fuso, router]);
+  }, [barbeariaId, userId, dono, fuso, soDe, router]);
 
   // fecha ao clicar fora ou com Esc
   useEffect(() => {
@@ -157,7 +172,7 @@ export function SinoAvisos({ barbeariaId, userId, dono, fuso }: { barbeariaId: s
 
   const pendentes = naoLidos(avisos, vistoAte);
   const linkDia = (a: Aviso) => (a.inicio ? `/painel/agenda?d=${partesLocais(new Date(a.inicio), fuso).data}` : "/painel/agenda");
-  const texto = (a: Aviso) => textoAviso(a, { comProfissional: dono, fuso, agora: new Date(agora) });
+  const texto = (a: Aviso) => textoAviso(a, { comProfissional: dono && !soDe, fuso, agora: new Date(agora) });
 
   return (
     <div ref={caixa} className="relative">

@@ -2,21 +2,25 @@ import Link from "next/link";
 import { CopiarTexto } from "@/components/CopiarTexto";
 import { agendamentosEntre, configuracaoAgenda } from "@/lib/consultasPainel";
 import { moeda } from "@/lib/formatar";
-import { exigirBarbearia } from "@/lib/painel";
+import { exigirBarbearia, filtroEquipe } from "@/lib/painel";
 import { linkAgendamento } from "@/lib/site";
 import { hojeLocal } from "@/lib/tempo";
+import { CaixaVerEquipe } from "./componentes/CaixaVerEquipe";
 import { CartaoAgendamento } from "./componentes/CartaoAgendamento";
 
 export const metadata = { title: "Hoje" };
 
 export default async function Page() {
-  const { supabase, barbearia: b, dono } = await exigirBarbearia();
+  const { supabase, barbearia: b, dono, meuProfissional } = await exigirBarbearia();
+  const filtro = await filtroEquipe(dono, meuProfissional);
   const hoje = hojeLocal(b.fuso);
-  const [lista, cfg] = await Promise.all([
+  const [todosHoje, cfg] = await Promise.all([
     agendamentosEntre(supabase, b.id, b.fuso, hoje, hoje),
     configuracaoAgenda(supabase, b.id),
   ]);
 
+  // dono vê só os próprios horários, a não ser que marque "Ver também a equipe"
+  const lista = todosHoje.filter((a) => !filtro.soDe || a.profissional_id === filtro.soDe);
   const conta = (s: string) => lista.filter((a) => a.status === s).length;
   const caixa = lista
     .filter((a) => a.status === "concluido")
@@ -24,7 +28,7 @@ export default async function Page() {
 
   const link = linkAgendamento(b.slug);
   // barbeiro só recebe os próprios horários (RLS), então não precisa do nome do profissional
-  const multiplos = dono && cfg.profissionais.filter((p) => p.ativo).length > 1;
+  const multiplos = dono && filtro.verEquipe && cfg.profissionais.filter((p) => p.ativo).length > 1;
 
   return (
     <div className="space-y-8">
@@ -39,6 +43,7 @@ export default async function Page() {
           <span className="text-suave">Seu link:</span>
           <code className="rounded bg-superficie-2 px-2 py-1 text-xs">{link}</code>
           <CopiarTexto texto={link} rotulo="Copiar link" />
+          {filtro.podeEscolher && <CaixaVerEquipe key={String(filtro.marcado)} marcado={filtro.marcado} />}
         </div>
       </section>
 

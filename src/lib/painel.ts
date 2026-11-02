@@ -6,6 +6,7 @@ import { createClient } from "./supabase/server";
 import type { Barbearia, Profissional } from "./tipos";
 
 export const COOKIE_BARBEARIA = "barbearia_atual";
+export const COOKIE_VER_EQUIPE = "ver_equipe";
 
 /**
  * Usuário logado + barbearia que ele está gerenciando. Quem tem mais de
@@ -53,6 +54,25 @@ export async function exigirBarbearia() {
   if (!ctx.atual) redirect("/painel");
   const dono = ctx.atual.papel === "dono";
   return { ...ctx, barbearia: ctx.atual.barbearia, papel: ctx.atual.papel, dono };
+}
+
+/**
+ * O dono vê, por padrão, só a própria agenda e os próprios avisos. Marcando
+ * "Ver também a equipe" (cookie neste aparelho), vê e mexe nos dos outros.
+ * Dono que não atende (sem cadastro de profissional) sempre vê a equipe.
+ * Barbeiro comum já só recebe o que é dele (o banco garante).
+ */
+export async function filtroEquipe(dono: boolean, meuProfissional: Profissional | null) {
+  const marcado = (await cookies()).get(COOKIE_VER_EQUIPE)?.value === "1";
+  const verEquipe = dono && (marcado || !meuProfissional);
+  return {
+    verEquipe,
+    /** mostrar a caixinha? (só para dono que também atende) */
+    podeEscolher: dono && !!meuProfissional,
+    marcado,
+    /** profissional que fica na tela quando a equipe está escondida */
+    soDe: verEquipe ? null : (meuProfissional?.id ?? null),
+  };
 }
 
 /** Páginas só do dono (serviços, configurações, equipe). */

@@ -8,7 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { COOKIE_BARBEARIA, contextoPainel, exigirBarbearia, exigirDono } from "@/lib/painel";
+import { COOKIE_BARBEARIA, COOKIE_VER_EQUIPE, contextoPainel, exigirBarbearia, exigirDono } from "@/lib/painel";
 import { traduzirErro } from "@/lib/site";
 import { dataValida, horaValida, localParaDate, somarDias } from "@/lib/tempo";
 import type { ResultadoAcao } from "@/lib/tipos";
@@ -42,6 +42,13 @@ export async function criarBarbearia(_: ResultadoAcao, d: FormData): Promise<Res
 export async function escolherBarbearia(d: FormData) {
   (await cookies()).set(COOKIE_BARBEARIA, txt(d, "id"), { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
   redirect("/painel");
+}
+
+/** Caixinha "Ver também a equipe" (só muda o que aparece na tela deste aparelho). */
+export async function alternarVerEquipe(d: FormData) {
+  await exigirDono();
+  (await cookies()).set(COOKIE_VER_EQUIPE, d.get("ver") === "1" ? "1" : "0", { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+  revalidatePath("/painel", "layout");
 }
 
 export async function salvarConfiguracoes(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
