@@ -47,6 +47,9 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
     if (!lista.includes(faixa)) lista.push(faixa);
     porDia.set(h.dia_semana, lista);
   }
+  // nomes dos serviços para o letreiro; repete até encher a faixa (o loop usa duas cópias)
+  const nomesServicos = [...new Set(servicos.map((s) => s.nome.trim()).filter(Boolean))];
+  const letreiro = nomesServicos.length ? Array.from({ length: Math.max(nomesServicos.length, 8) }, (_, i) => nomesServicos[i % nomesServicos.length]) : [];
   const promocoesHoje = servicos.filter((s) => precoDoDia(s, promocoes, hoje).promocao);
 
   return (
@@ -89,6 +92,19 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
             )}
           </div>
         </section>
+
+        {/* Letreiro com os serviços (mesmo estilo da página inicial) */}
+        {letreiro.length > 0 && (
+          <div className="border-y border-borda bg-texto py-3 text-fundo" aria-hidden="true">
+            <div className="letreiro flex w-max gap-8 font-titulo text-2xl font-extrabold tracking-wider uppercase">
+              {[...letreiro, ...letreiro].map((nome, i) => (
+                <span key={i} className="flex items-center gap-8 whitespace-nowrap">
+                  {nome} <span className="text-destaque">✦</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Trabalhos: carrossel deslizando */}
         {trabalhos.length > 0 && (
