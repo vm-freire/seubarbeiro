@@ -98,6 +98,20 @@ export default async function Page() {
           <div>
             <label className="rotulo" htmlFor="descricao">Descrição curta</label>
             <textarea id="descricao" name="descricao" defaultValue={b.descricao ?? ""} maxLength={300} rows={2} className="campo py-2" />
+            <p className="ajuda">Uma frase que aparece no topo da página, por cima da capa.</p>
+          </div>
+          <div>
+            <label className="rotulo" htmlFor="sobre">Sobre nós</label>
+            <textarea
+              id="sobre"
+              name="sobre"
+              defaultValue={b.sobre ?? ""}
+              maxLength={2000}
+              rows={6}
+              className="campo py-2"
+              placeholder="Conte a história da barbearia: desde quando existe, o estilo da casa, o que vocês fazem de melhor…"
+            />
+            <p className="ajuda">Aparece na seção “Sobre nós” da sua página. Pule linhas para separar os parágrafos.</p>
           </div>
 
           <h3 className="pt-2 font-semibold">Agenda</h3>

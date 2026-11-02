@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { Cabecalho } from "@/components/Cabecalho";
+import { CarrosselTrabalhos } from "@/components/CarrosselTrabalhos";
 import { Rodape } from "@/components/Rodape";
 import { WhatsFlutuante } from "@/components/WhatsFlutuante";
 import { assinaturaLiberada } from "@/lib/assinatura";
@@ -26,7 +27,7 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
   const { slug } = await params;
   const d = await carregarBarbeariaPublica(slug);
   if (!d) notFound();
-  const { barbearia: b, servicos, promocoes, horarios, profissionais } = d;
+  const { barbearia: b, servicos, promocoes, horarios, profissionais, trabalhos } = d;
 
   const hoje = hojeLocal(b.fuso);
   const rota = linkRota(b);
@@ -86,6 +87,44 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
             )}
           </div>
         </section>
+
+        {/* Trabalhos: carrossel deslizando */}
+        {trabalhos.length > 0 && (
+          <section className="relative pt-20">
+            <span className="titulo-fundo" aria-hidden="true">Trabalhos</span>
+            <div className="relative mx-auto flex max-w-6xl flex-wrap items-end justify-between gap-3 px-4">
+              <div>
+                <p className="sobretitulo">Feito aqui</p>
+                <h2 className="titulo mt-2 text-4xl sm:text-5xl">Nossos trabalhos</h2>
+              </div>
+              <Link href={`/b/${b.slug}/galeria`} className="btn">
+                Ver galeria ({trabalhos.length})
+              </Link>
+            </div>
+            <div className="mt-8">
+              <CarrosselTrabalhos fotos={trabalhos} slug={b.slug} />
+            </div>
+          </section>
+        )}
+
+        {/* Sobre nós */}
+        {b.sobre && (
+          <section className="mx-auto max-w-3xl px-4 pt-20">
+            <div className="revelar">
+              <p className="sobretitulo">Quem somos</p>
+              <h2 className="titulo mt-2 text-4xl sm:text-5xl">Sobre nós</h2>
+              <div className="mt-6 space-y-4 text-lg leading-relaxed">
+                {b.sobre
+                  .split(/\n\s*\n/)
+                  .map((p) => p.trim())
+                  .filter(Boolean)
+                  .map((p, i) => (
+                    <p key={i} className="whitespace-pre-line">{p}</p>
+                  ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Profissionais */}
         {profissionais.length > 0 && (

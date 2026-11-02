@@ -232,6 +232,22 @@ body {
   animation: pulsar 2.4s ease-out infinite;
 }
 
+/* Carrossel de trabalhos: duas cópias da fila deslizando sem fim.
+   Para ao passar o mouse ou focar; com "reduzir movimento" vira rolagem manual. */
+.carrossel {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+}
+.carrossel-trilho {
+  display: flex;
+  width: max-content;
+  animation: letreiro var(--duracao, 60s) linear infinite;
+}
+.carrossel:hover .carrossel-trilho,
+.carrossel:focus-within .carrossel-trilho {
+  animation-play-state: paused;
+}
+
 /* Revelar ao rolar: só onde o navegador suporta animação ligada à rolagem.
    Onde não suporta, o conteúdo aparece normalmente (nunca fica escondido).
    Não usar em formulários. */
@@ -273,6 +289,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .carrossel { overflow-x: auto; mask-image: none; scroll-snap-type: x mandatory; }
+  .carrossel-copia { display: none; }
   *, *::before, *::after {
     animation: none !important;
     transition: none !important;

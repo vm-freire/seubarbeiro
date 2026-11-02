@@ -51,6 +51,7 @@ export async function salvarConfiguracoes(_: ResultadoAcao, d: FormData): Promis
     nome: txt(d, "nome"),
     slug: txt(d, "slug").toLowerCase(),
     descricao: opcional(d, "descricao"),
+    sobre: opcional(d, "sobre"),
     endereco: opcional(d, "endereco"),
     cidade: opcional(d, "cidade"),
     maps_url: opcional(d, "maps_url"),
@@ -343,6 +344,54 @@ export async function removerFoto(tipo: "profissional" | "capa", id: string) {
   if (tipo === "capa") await supabase.from("barbearias").update({ capa_url: null }).eq("id", barbearia.id);
   else await supabase.from("profissionais").update({ foto_url: null }).eq("id", id).eq("barbearia_id", barbearia.id);
   revalidatePath("/", "layout");
+}
+
+// ---------------------------------------------------------------- galeria
+
+const PREFIXO_FOTOS = () => `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/fotos/`;
+
+/** Grava uma foto de trabalho já enviada ao Storage (o banco confere quem pode). */
+export async function adicionarTrabalho(p: { url: string; caminho: string; profissionalId: string | null; legenda: string }): Promise<ResultadoAcao> {
+  const { supabase, barbearia, dono, meuProfissional } = await exigirBarbearia();
+  if (!p.url.startsWith(PREFIXO_FOTOS()) || !p.caminho.startsWith(`${barbearia.id}/`)) return { erro: "Endereço de foto inválido." };
+  const profissionalId = dono ? p.profissionalId || null : meuProfissional?.id ?? null;
+  const { error } = await supabase.from("trabalhos").insert({
+    barbearia_id: barbearia.id,
+    profissional_id: profissionalId,
+    url: p.url,
+    caminho: p.caminho,
+    legenda: p.legenda.trim().slice(0, 120) || null,
+  });
+  if (error) {
+    // não deixa arquivo solto no Storage se o banco recusou
+    await supabase.storage.from("fotos").remove([p.caminho]);
+    return falha(error);
+  }
+  revalidatePath("/painel/galeria");
+  revalidatePath(`/b/${barbearia.slug}`, "layout");
+  return { ok: "Foto adicionada." };
+}
+
+export async function salvarLegenda(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
+  const { supabase, barbearia } = await exigirBarbearia();
+  const { data, error } = await supabase
+    .from("trabalhos")
+    .update({ legenda: opcional(d, "legenda")?.slice(0, 120) ?? null })
+    .eq("id", txt(d, "id"))
+    .select("id");
+  if (error) return falha(error);
+  revalidatePath("/painel/galeria");
+  revalidatePath(`/b/${barbearia.slug}`, "layout");
+  return semEfeito(data) ?? { ok: "Legenda salva." };
+}
+
+export async function apagarTrabalho(d: FormData) {
+  const { supabase, barbearia } = await exigirBarbearia();
+  const { data } = await supabase.from("trabalhos").delete().eq("id", txt(d, "id")).select("caminho");
+  const caminhos = (data ?? []).map((t) => t.caminho as string).filter(Boolean);
+  if (caminhos.length) await supabase.storage.from("fotos").remove(caminhos);
+  revalidatePath("/painel/galeria");
+  revalidatePath(`/b/${barbearia.slug}`, "layout");
 }
 
 // ---------------------------------------------------------------- equipe

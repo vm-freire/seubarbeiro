@@ -172,6 +172,23 @@ ok((await foto(D, `${barb}/${profD.id}/f.jpg`)).rows.length === 1, "barbeiro env
 ok((await erro(D, `insert into storage.objects (bucket_id, name) values ('fotos', $1)`, [`${barb}/${prof.id}/f.jpg`])) !== null, "barbeiro não troca a foto do outro");
 ok((await erro(D, `insert into storage.objects (bucket_id, name) values ('fotos', $1)`, [`${barb}/capa/c.jpg`])) !== null, "barbeiro não troca a capa");
 ok((await foto(A, `${barb}/capa/c.jpg`)).rows.length === 1, "dono troca a capa");
+
+// galeria de trabalhos e "Sobre nós"
+const trab = (uid, profissional, nome) => como(uid,
+  `insert into trabalhos (barbearia_id, profissional_id, url, caminho) values ($1, $2, 'https://x.supabase.co/f.jpg', $3) returning id`, [barb, profissional, nome]);
+const tD = (await trab(D, profD.id, "d.jpg")).rows[0].id;
+ok(!!tD, "barbeiro posta foto de trabalho com o nome dele");
+ok((await erro(D, `insert into trabalhos (barbearia_id, profissional_id, url, caminho) values ($1, $2, 'https://x/f.jpg', 'x')`, [barb, prof.id])) !== null, "barbeiro não posta no nome do outro");
+ok((await erro(D, `insert into trabalhos (barbearia_id, url, caminho) values ($1, 'https://x/f.jpg', 'x')`, [barb])) !== null, "barbeiro não posta foto 'da barbearia'");
+const tA = (await trab(A, null, "a.jpg")).rows[0].id;
+ok(!!tA, "dono posta foto da barbearia");
+ok((await como(null, `select id from trabalhos where barbearia_id=$1`, [barb])).rows.length === 2, "cliente sem login vê a galeria");
+ok((await como(D, `delete from trabalhos where id=$1 returning id`, [tA])).rows.length === 0, "barbeiro não apaga foto do dono");
+ok((await erro(D, `update trabalhos set url='https://outra/f.jpg' where id=$1`, [tD]))?.includes("legenda"), "foto enviada não troca de arquivo");
+ok((await como(D, `update trabalhos set legenda='Degradê' where id=$1 returning id`, [tD])).rows.length === 1, "barbeiro põe legenda na própria foto");
+ok((await como(D, `delete from trabalhos where id=$1 returning id`, [tD])).rows.length === 1, "barbeiro apaga a própria foto");
+ok((await como(D, `update barbearias set sobre='x' where id=$1 returning id`, [barb])).rows.length === 0, "barbeiro não edita o Sobre nós");
+ok((await como(A, `update barbearias set sobre='Desde 2010 no bairro.' where id=$1 returning id`, [barb])).rows.length === 1, "dono edita o Sobre nós");
 ok((await erro(A, `select remover_da_equipe($1)`, [prof.id]))?.includes("dono não pode"), "dono não remove a si mesmo");
 await como(A, `select remover_da_equipe($1)`, [profD.id]);
 ok((await como(D, `select id from agendamentos`)).rows.length === 0, "barbeiro removido perde o acesso");

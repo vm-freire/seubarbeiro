@@ -3,18 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { removerFoto, salvarFoto } from "@/app/painel/acoes";
+import { erroDeEnvio, reduzirFoto } from "@/lib/imagem";
 import { createClient } from "@/lib/supabase/client";
-
-/** Reduz a foto no próprio celular antes de enviar (fica leve e rápida). */
-async function reduzir(arquivo: File, maximo: number): Promise<Blob> {
-  const bitmap = await createImageBitmap(arquivo);
-  const escala = Math.min(1, maximo / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * escala);
-  canvas.height = Math.round(bitmap.height * escala);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return new Promise((ok, falha) => canvas.toBlob((b) => (b ? ok(b) : falha(new Error("imagem"))), "image/jpeg", 0.85));
-}
 
 /**
  * Envia uma foto para o Storage (bucket "fotos") e grava o endereço.
@@ -47,7 +37,7 @@ export function EnviarFoto({
     if (!arquivo.type.startsWith("image/")) return setEstado({ erro: "Escolha uma imagem (foto)." });
     setEstado({ carregando: true });
     try {
-      const blob = await reduzir(arquivo, maximo);
+      const blob = await reduzirFoto(arquivo, maximo);
       const caminho = `${barbeariaId}/${tipo === "capa" ? "capa" : id}/${Date.now()}.jpg`;
       const supabase = createClient();
       const { error } = await supabase.storage.from("fotos").upload(caminho, blob, { contentType: "image/jpeg" });
@@ -58,8 +48,7 @@ export function EnviarFoto({
       setEstado({});
       router.refresh();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "";
-      setEstado({ erro: /row-level|policy|Unauthorized|403/i.test(msg) ? "Você não tem permissão para trocar esta foto." : msg || "Não foi possível enviar a foto." });
+      setEstado({ erro: erroDeEnvio(err) });
     }
   }
 

@@ -5,6 +5,7 @@ export type Barbearia = {
   slug: string;
   nome: string;
   descricao: string | null;
+  sobre: string | null;
   endereco: string | null;
   cidade: string | null;
   maps_url: string | null;
@@ -117,6 +118,17 @@ export type Agendamento = {
   forma_pagamento: Exclude<Pagamento, "nao_informado"> | null;
   pagamento_obs: string | null;
   observacoes: string | null;
+  criado_em: string;
+};
+
+/** Foto de corte/trabalho da galeria (migração 004). */
+export type Trabalho = {
+  id: string;
+  barbearia_id: string;
+  profissional_id: string | null;
+  url: string;
+  caminho: string;
+  legenda: string | null;
   criado_em: string;
 };
 

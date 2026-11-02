@@ -10,6 +10,7 @@ const itens = [
   ["/painel/clientes", "Clientes", false],
   ["/painel/horarios", "Horários e folgas", false],
   ["/painel/relatorios", "Relatórios", false],
+  ["/painel/galeria", "Galeria", false],
   ["/painel/equipe", "Equipe", true],
   ["/painel/servicos", "Serviços e preços", true],
   ["/painel/configuracoes", "Barbearia", true],
