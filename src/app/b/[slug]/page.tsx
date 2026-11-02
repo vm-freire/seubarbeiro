@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { Cabecalho } from "@/components/Cabecalho";
 import { Inclinar3D } from "@/components/Inclinar3D";
+import { ManequimCorte } from "@/components/ManequimCorte";
 import { CarrosselTrabalhos } from "@/components/CarrosselTrabalhos";
 import { Rodape } from "@/components/Rodape";
 import { WhatsFlutuante } from "@/components/WhatsFlutuante";
@@ -195,6 +196,21 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
             </ul>
           </section>
         )}
+
+        {/* Brincadeira: manequim para "cortar" o cabelo com o mouse */}
+        <section className="mx-auto grid max-w-5xl items-center gap-8 px-4 pt-24 pb-6 md:grid-cols-2">
+          <div className="revelar text-center md:text-left">
+            <p className="sobretitulo">Passe a máquina</p>
+            <h2 className="titulo mt-2 text-4xl sm:text-5xl">Cabelo grande demais?</h2>
+            <p className="mt-3 text-lg text-suave">
+              Passe o mouse (ou o dedo) no cabelo do manequim e veja o corte acontecer. O de verdade fica por nossa conta.
+            </p>
+            {liberada && (
+              <Link href={agendar} className="btn-primario mt-6 px-7 text-base">Agendar meu corte</Link>
+            )}
+          </div>
+          <ManequimCorte />
+        </section>
 
         {/* Serviços */}
         <section className="relative mx-auto max-w-4xl px-4 pt-24 pb-10">
