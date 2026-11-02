@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
+import { BotaoTema } from "@/components/BotaoTema";
 import { Logo, LogoMarca } from "@/components/Logo";
 import { assinaturaLiberada, ROTULO_ASSINATURA } from "@/lib/assinatura";
 import { contextoPainel } from "@/lib/painel";
@@ -61,6 +62,7 @@ export default async function Layout({ children }: LayoutProps<"/painel">) {
               <Avatar nome={nomeUsuario} foto={meuProfissional?.foto_url} tamanho={32} />
               <span className="hidden text-sm font-semibold sm:inline">{nomeUsuario.split(" ")[0]}</span>
             </Link>
+            <BotaoTema />
             <Link href={`/b/${b.slug}`} target="_blank" className="btn btn-pequeno hidden sm:inline-flex">Ver página</Link>
             <form action={sair}>
               <button className="btn btn-pequeno">Sair</button>

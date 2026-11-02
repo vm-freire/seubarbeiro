@@ -5,6 +5,7 @@
    Tinta quase preta, papel creme, vermelho de poste de barbeiro e latão.
    ===================================================================== */
 :root {
+  color-scheme: light;
   --fundo: #f3ede2;
   --fundo-2: #ebe3d4;
   --superficie: #fffcf6;
@@ -31,8 +32,11 @@
   --sombra: 0 1px 2px rgb(21 17 15 / 0.06), 0 8px 24px -12px rgb(21 17 15 / 0.18);
 }
 
+/* Tema escuro: segue o aparelho, a não ser que a pessoa escolha no botão
+   sol/lua (data-tema="claro" | "escuro" no <html>, salvo no aparelho). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
+    color-scheme: dark;
     --fundo: #0f0d0c;
     --fundo-2: #171412;
     --superficie: #1b1715;
@@ -58,7 +62,40 @@
     --cinza-texto: #b3aaa0;
     --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.7);
   }
+  :root:not([data-tema="claro"]) .so-claro { display: none; }
+  :root:not([data-tema="claro"]) .so-escuro { display: block; }
 }
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+  --fundo: #0f0d0c;
+  --fundo-2: #171412;
+  --superficie: #1b1715;
+  --superficie-2: #26201c;
+  --texto: #f3ede2;
+  --suave: #b0a597;
+  --borda: #3a322c;
+  --destaque: #e0324a;
+  --destaque-texto: #fffaf2;
+  --latao: #d9b440;
+  --contorno-gigante: rgba(243, 237, 226, 0.07);
+  --logo-balao: #15110f;
+  --logo-contorno: #f3ede2;
+  --amarelo-fundo: #3d2a05;
+  --amarelo-texto: #fcd877;
+  --verde-fundo: #0b2e18;
+  --verde-texto: #86e3a4;
+  --vermelho-fundo: #3f0e12;
+  --vermelho-texto: #ffa3a8;
+  --azul-fundo: #13224a;
+  --azul-texto: #a5c1ff;
+  --cinza-fundo: #2a2420;
+  --cinza-texto: #b3aaa0;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.7);
+}
+:root[data-tema="escuro"] .so-claro { display: none; }
+:root[data-tema="escuro"] .so-escuro { display: block; }
+.so-escuro { display: none; }
 
 @theme inline {
   --color-fundo: var(--fundo);

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { sair } from "@/app/(conta)/acoes";
+import { BotaoTema } from "./BotaoTema";
 import { Logo } from "./Logo";
 
 /**
@@ -20,6 +21,7 @@ export async function Cabecalho({ barbearia, link = "/" }: { barbearia?: string;
           <Logo animado tamanho={38} barbearia={barbearia} />
         </Link>
         <nav className="flex shrink-0 items-center gap-2">
+          <BotaoTema />
           {user ? (
             <>
               <Link href="/meus-agendamentos" className="btn btn-pequeno hidden sm:inline-flex">Meus horários</Link>
