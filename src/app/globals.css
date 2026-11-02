@@ -212,6 +212,18 @@ body {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
+@keyframes sino {
+  0%, 100% { transform: rotate(0); }
+  15% { transform: rotate(18deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-6deg); }
+  75% { transform: rotate(3deg); }
+}
+@keyframes aviso-chegando {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
 @keyframes pulsar {
   0%, 100% { box-shadow: 0 0 0 0 rgb(37 211 102 / 0.55); }
   60% { box-shadow: 0 0 0 14px rgb(37 211 102 / 0); }
@@ -227,6 +239,13 @@ body {
 }
 .letreiro {
   animation: letreiro 28s linear infinite;
+}
+.sino-balanca {
+  transform-origin: 50% 10%;
+  animation: sino 0.9s ease-in-out 2;
+}
+.aviso-chegando {
+  animation: aviso-chegando 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 .pulsar {
   animation: pulsar 2.4s ease-out infinite;
@@ -246,6 +265,44 @@ body {
 .carrossel:hover .carrossel-trilho,
 .carrossel:focus-within .carrossel-trilho {
   animation-play-state: paused;
+}
+
+/* Cartão 3D que segue o mouse (componente Inclinar3D) */
+.cena-3d {
+  perspective: 1000px;
+}
+.inclinar-3d {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.inclinar-3d[data-mexendo] {
+  transition-duration: 0.12s;
+}
+/* a profundidade só existe com mouse (no celular fica tudo plano, sem mudar de tamanho) */
+.inclinar-3d[data-ligado] .camada-3d {
+  transform: translateZ(var(--z, 0px));
+}
+.camada-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.inclinar-3d[data-mexendo] .camada-3d:hover {
+  transform: translateZ(calc(var(--z, 0px) + 22px)) scale(1.03);
+}
+.brilho-3d {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgb(255 255 255 / 0.28), transparent 55%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  transform: translateZ(1px);
+}
+.inclinar-3d[data-mexendo] .brilho-3d {
+  opacity: 1;
 }
 
 /* Revelar ao rolar: só onde o navegador suporta animação ligada à rolagem.

@@ -22,7 +22,15 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
       return;
     }
     setEnviando(true);
-    const { data, error } = await createClient().auth.signUp({
+    const supabase = createClient();
+    // um WhatsApp por conta (o banco também confere; aqui é só para avisar antes)
+    const { data: emUso } = await supabase.rpc("telefone_em_uso", { p_telefone: telefone });
+    if (emUso) {
+      setEnviando(false);
+      setErro("Esse WhatsApp já tem uma conta. Use a opção Entrar.");
+      return;
+    }
+    const { data, error } = await supabase.auth.signUp({
       email: String(f.get("email")).trim(),
       password: String(f.get("senha")),
       options: {

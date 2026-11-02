@@ -47,15 +47,23 @@ async function erro(uid, sql, params = []) {
   try { await como(uid, sql, params); return null; } catch (e) { return e.message; }
 }
 
-const usuario = async (email, nome, tipo = "cliente") =>
+let fone = 0; // cada conta com um WhatsApp diferente (o banco não aceita repetido)
+const usuario = async (email, nome, tipo = "cliente", telefone = `(41) 99999-000${fone++}`) =>
   (await db.query(`insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id`,
-    [email, { nome, telefone: "(41) 99999-0000", tipo }])).rows[0].id;
+    [email, { nome, telefone, tipo }])).rows[0].id;
 
 const A = await usuario("barbeiro@example.com", "João Barbeiro", "profissional");
 const B = await usuario("cliente1@example.com", "Pedro");
 const C = await usuario("cliente2@example.com", "Lucas");
 
 ok((await db.query(`select nome, telefone from perfis where id=$1`, [A])).rows[0].telefone === "41999990000", "perfil criado com telefone só dígitos");
+
+// WhatsApp único
+ok((await como(null, `select telefone_em_uso($1) r`, ["+55 (41) 99999-0001"])).rows[0].r === true, "telefone_em_uso acha o número mesmo com +55");
+ok((await como(null, `select telefone_em_uso($1) r`, ["41 91234-5678"])).rows[0].r === false, "telefone_em_uso: número livre");
+ok((await usuario("repetido@example.com", "Rep", "cliente", "5541999990002").catch((e) => e.message))?.includes?.("já tem uma conta"), "cadastro com WhatsApp repetido é recusado");
+ok((await erro(B, `update perfis set telefone=$2 where id=$1`, [B, "41999990000"]))?.includes("já tem uma conta"), "não troca para o WhatsApp de outra conta");
+ok((await como(B, `update perfis set nome=$2 where id=$1 returning id`, [B, "Pedro"])).rows.length === 1, "editar o perfil sem mudar o número continua ok");
 
 const barb = (await como(A, `select criar_barbearia('Barbearia do João', 'barbearia-do-joao') id`)).rows[0].id;
 ok(!!barb, "criar_barbearia");
@@ -152,6 +160,15 @@ ok((await como(D, `select id from agendamentos`)).rows.length === 0, "barbeiro n
 const agD = (await agendarCom(B, profD.id, ts(ter, "15:00"), [sv["Barba"]])).rows[0].id;
 ok((await como(D, `select id from agendamentos`)).rows.length === 1, "barbeiro vê o agendamento dele");
 ok((await como(D, `select nome from clientes`)).rows.map((r) => r.nome).join() === "Pedro", "barbeiro vê só os clientes que marcaram com ele");
+
+// avisos do painel (sino)
+const avD = (await como(D, `select tipo, cliente_nome, autor from notificacoes`)).rows;
+ok(avD.length === 1 && avD[0].tipo === "marcou" && avD[0].cliente_nome === "Pedro" && avD[0].autor === B, "barbeiro recebe aviso de quem marcou com ele");
+const avA = (await como(A, `select tipo from notificacoes`)).rows.map((r) => r.tipo);
+ok(avA.includes("desmarcou") && avA.includes("confirmou") && avA.filter((t) => t === "marcou").length >= 4, `dono vê todos os avisos (${avA.join(",")})`);
+ok((await como(B, `select id from notificacoes`)).rows.length === 0 && (await como(null, `select id from notificacoes`)).rows.length === 0, "cliente e anônimo não veem avisos");
+ok((await erro(A, `insert into notificacoes (barbearia_id, tipo) values ($1, 'marcou')`, [barb])) !== null, "ninguém grava aviso na mão");
+ok((await db.query(`select autor from notificacoes where tipo='desmarcou'`)).rows[0].autor === null, "aviso pelo link do cliente fica sem autor");
 
 // serviços por profissional
 ok((await erro(D, `insert into profissional_nao_faz (profissional_id, servico_id, barbearia_id) values ($1, $2, $3)`, [profD.id, sv["Corte de cabelo"], barb])) !== null, "barbeiro não define os próprios serviços");

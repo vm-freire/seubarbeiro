@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Cabecalho } from "@/components/Cabecalho";
+import { Inclinar3D } from "@/components/Inclinar3D";
 import { LogoMarca } from "@/components/Logo";
 import { Rodape } from "@/components/Rodape";
 
@@ -17,6 +18,8 @@ const passos = [
   ["Mande o link", "Coloque na resposta automática do WhatsApp e no Instagram."],
   ["Atenda e feche o caixa", "A agenda se enche sozinha e o relatório sai com um toque."],
 ];
+
+const z = (px: number) => ({ "--z": `${px}px` }) as React.CSSProperties;
 
 const palavras = ["Corte", "Barba", "Sobrancelha", "Degradê", "Pigmentação", "Combo", "Navalhado", "Pezinho"];
 
@@ -44,29 +47,35 @@ export default function Home() {
             <p className="entrar mt-3 text-sm text-suave" style={{ "--atraso": "560ms" } as React.CSSProperties}>Grátis durante o período de testes.</p>
           </div>
 
-          {/* "Celular" com a mensagem de confirmação */}
+          {/* "Celular" com a mensagem de confirmação: inclina em 3D seguindo o mouse */}
           <div className="entrar relative mx-auto w-full max-w-xs" style={{ "--atraso": "300ms" } as React.CSSProperties}>
-            <div className="faixa-listrada absolute -inset-4 -z-10 rotate-3 rounded-[2.5rem] opacity-90" aria-hidden="true" />
-            <div className="rounded-[2rem] border border-borda bg-superficie p-4" style={{ boxShadow: "var(--sombra)" }}>
-              <div className="mb-3 flex items-center gap-2 border-b border-borda pb-3">
-                <LogoMarca tamanho={34} animado />
-                <div className="leading-tight">
-                  <p className="text-sm font-bold">Barbearia do João</p>
-                  <p className="text-xs text-suave">por Seu Barbeiro</p>
+            <Inclinar3D className="rounded-[2rem]">
+              <div
+                className="faixa-listrada camada-3d pointer-events-none absolute -inset-4 rotate-3 rounded-[2.5rem] opacity-90"
+                style={z(-60)}
+                aria-hidden="true"
+              />
+              <div className="relative rounded-[2rem] border border-borda bg-superficie p-4" style={{ boxShadow: "var(--sombra)", transformStyle: "preserve-3d" }}>
+                <div className="camada-3d mb-3 flex items-center gap-2 border-b border-borda pb-3" style={z(24)}>
+                  <LogoMarca tamanho={34} animado />
+                  <div className="leading-tight">
+                    <p className="text-sm font-bold">Barbearia do João</p>
+                    <p className="text-xs text-suave">por Seu Barbeiro</p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm" style={{ transformStyle: "preserve-3d" }}>
+                  <p className="camada-3d w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2" style={z(36)}>
+                    Olá, Pedro! Seu horário é <strong>hoje às 15:00</strong> (Corte + Barba).
+                  </p>
+                  <p className="camada-3d w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2" style={z(44)}>Você vem?</p>
+                  <div className="grid grid-cols-2 gap-2 pt-1" style={{ transformStyle: "preserve-3d" }}>
+                    <span className="camada-3d rounded-full bg-[var(--verde-fundo)] py-2 text-center font-bold text-[var(--verde-texto)]" style={z(60)}>Vou ✓</span>
+                    <span className="camada-3d rounded-full border border-borda bg-superficie py-2 text-center font-semibold text-suave" style={z(52)}>Não vou</span>
+                  </div>
+                  <p className="camada-3d ml-auto w-fit rounded-2xl rounded-tr-sm bg-[var(--verde-fundo)] px-3 py-2 text-[var(--verde-texto)]" style={z(40)}>Confirmado. Até lá! 💈</p>
                 </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <p className="w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2">
-                  Olá, Pedro! Seu horário é <strong>hoje às 15:00</strong> (Corte + Barba).
-                </p>
-                <p className="w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2">Você vem?</p>
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <span className="rounded-full bg-[var(--verde-fundo)] py-2 text-center font-bold text-[var(--verde-texto)]">Vou ✓</span>
-                  <span className="rounded-full border border-borda py-2 text-center font-semibold text-suave">Não vou</span>
-                </div>
-                <p className="ml-auto w-fit rounded-2xl rounded-tr-sm bg-[var(--verde-fundo)] px-3 py-2 text-[var(--verde-texto)]">Confirmado. Até lá! 💈</p>
-              </div>
-            </div>
+            </Inclinar3D>
           </div>
         </section>
 

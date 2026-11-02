@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { Cabecalho } from "@/components/Cabecalho";
+import { Inclinar3D } from "@/components/Inclinar3D";
 import { CarrosselTrabalhos } from "@/components/CarrosselTrabalhos";
 import { Rodape } from "@/components/Rodape";
 import { WhatsFlutuante } from "@/components/WhatsFlutuante";
@@ -21,6 +22,7 @@ export async function generateMetadata({ params }: PageProps<"/b/[slug]">): Prom
   return d ? { title: d.barbearia.nome, description: `Agende seu horário na ${d.barbearia.nome}.` } : {};
 }
 
+const z = (px: number) => ({ "--z": `${px}px` }) as React.CSSProperties;
 const atraso = (ms: number) => ({ "--atraso": `${ms}ms` }) as React.CSSProperties;
 
 export default async function Page({ params }: PageProps<"/b/[slug]">) {
@@ -137,35 +139,41 @@ export default async function Page({ params }: PageProps<"/b/[slug]">) {
             <ul className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {profissionais.map((p) => (
                 <li key={p.id} className="revelar">
-                  <Link
-                    href={liberada ? `${agendar}?p=${p.id}` : `/b/${b.slug}`}
-                    className="group relative block overflow-hidden rounded-3xl border border-borda bg-superficie"
-                    style={{ boxShadow: "var(--sombra)" }}
-                  >
-                    <div className="relative aspect-[4/5] overflow-hidden bg-texto">
-                      {p.foto_url ? (
-                        <Image
-                          src={p.foto_url}
-                          alt={p.nome}
-                          fill
-                          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                          className="object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="grid h-full place-items-center">
-                          <Avatar nome={p.nome} tamanho={140} className="!bg-destaque !text-destaque-texto" />
+                  <Inclinar3D className="rounded-3xl" max={10}>
+                    <Link
+                      href={liberada ? `${agendar}?p=${p.id}` : `/b/${b.slug}`}
+                      className="group relative block rounded-3xl border border-borda bg-superficie"
+                      style={{ boxShadow: "var(--sombra)", transformStyle: "preserve-3d" }}
+                    >
+                      <div className="relative aspect-[4/5] rounded-t-3xl bg-texto" style={{ transformStyle: "preserve-3d" }}>
+                        <div className="absolute inset-0 overflow-hidden rounded-t-3xl">
+                          {p.foto_url ? (
+                            <Image
+                              src={p.foto_url}
+                              alt={p.nome}
+                              fill
+                              sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                              className="object-cover transition duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="grid h-full place-items-center">
+                              <Avatar nome={p.nome} tamanho={140} className="!bg-destaque !text-destaque-texto" />
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 pt-16 text-[#f3ede2]">
-                        <p className="text-xs font-bold tracking-[0.25em] text-[#ff8a99] uppercase">{p.titulo}</p>
-                        <p className="font-titulo text-3xl leading-none font-extrabold uppercase">{p.nome}</p>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 pt-16 text-[#f3ede2]" style={{ transformStyle: "preserve-3d" }}>
+                          <div className="camada-3d" style={z(40)}>
+                            <p className="text-xs font-bold tracking-[0.25em] text-[#ff8a99] uppercase">{p.titulo}</p>
+                            <p className="font-titulo text-3xl leading-none font-extrabold uppercase">{p.nome}</p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 p-4">
-                      <p className="line-clamp-2 text-sm text-suave">{p.bio || "Veja os horários livres"}</p>
-                      <span className="shrink-0 font-bold text-destaque transition group-hover:translate-x-1">Horários →</span>
-                    </div>
-                  </Link>
+                      <div className="flex items-center justify-between gap-3 p-4" style={{ transformStyle: "preserve-3d" }}>
+                        <p className="line-clamp-2 text-sm text-suave">{p.bio || "Veja os horários livres"}</p>
+                        <span className="camada-3d shrink-0 font-bold text-destaque" style={z(28)}>Horários →</span>
+                      </div>
+                    </Link>
+                  </Inclinar3D>
                 </li>
               ))}
             </ul>
