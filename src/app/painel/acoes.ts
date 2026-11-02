@@ -8,7 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { COOKIE_BARBEARIA, contextoPainel, exigirBarbearia } from "@/lib/painel";
+import { COOKIE_BARBEARIA, contextoPainel, exigirBarbearia, exigirDono } from "@/lib/painel";
 import { traduzirErro } from "@/lib/site";
 import { dataValida, horaValida, localParaDate, somarDias } from "@/lib/tempo";
 import type { ResultadoAcao } from "@/lib/tipos";
@@ -45,7 +45,7 @@ export async function escolherBarbearia(d: FormData) {
 }
 
 export async function salvarConfiguracoes(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia } = await exigirDono();
   const whatsapp = soDigitos(txt(d, "whatsapp"));
   const dados = {
     nome: txt(d, "nome"),
@@ -76,7 +76,7 @@ export async function salvarConfiguracoes(_: ResultadoAcao, d: FormData): Promis
 const CATEGORIAS_OK = ["corte", "barba", "sobrancelha", "combo", "outro"];
 
 export async function salvarServico(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia } = await exigirDono();
   const id = txt(d, "id");
   const dados = {
     nome: txt(d, "nome"),
@@ -101,13 +101,13 @@ export async function salvarServico(_: ResultadoAcao, d: FormData): Promise<Resu
 }
 
 export async function removerServico(d: FormData) {
-  const { supabase } = await exigirBarbearia();
+  const { supabase } = await exigirDono();
   await supabase.from("servicos").delete().eq("id", txt(d, "id"));
   revalidatePath("/painel/servicos");
 }
 
 export async function salvarPromocao(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia } = await exigirDono();
   const dias = d.getAll("dias").map(Number).filter((n) => n >= 0 && n <= 6);
   const dados = {
     barbearia_id: barbearia.id,
@@ -128,13 +128,13 @@ export async function salvarPromocao(_: ResultadoAcao, d: FormData): Promise<Res
 }
 
 export async function alternarPromocao(d: FormData) {
-  const { supabase } = await exigirBarbearia();
+  const { supabase } = await exigirDono();
   await supabase.from("promocoes").update({ ativa: d.get("ativa") === "1" }).eq("id", txt(d, "id"));
   revalidatePath("/painel/servicos");
 }
 
 export async function removerPromocao(d: FormData) {
-  const { supabase } = await exigirBarbearia();
+  const { supabase } = await exigirDono();
   await supabase.from("promocoes").delete().eq("id", txt(d, "id"));
   revalidatePath("/painel/servicos");
 }
@@ -173,7 +173,7 @@ export async function salvarHorariosSemana(_: ResultadoAcao, d: FormData): Promi
 }
 
 export async function salvarAgendaAberta(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia } = await exigirDono();
   const dias = numero(d, "dias_agenda_aberta");
   const ate = txt(d, "agenda_aberta_ate");
   if (!(dias >= 1 && dias <= 120)) return { erro: "Escolha entre 1 e 120 dias." };
@@ -188,7 +188,7 @@ export async function salvarAgendaAberta(_: ResultadoAcao, d: FormData): Promise
 }
 
 export async function adicionarBloqueio(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia, dono, meuProfissional } = await exigirBarbearia();
   const de = txt(d, "data_inicio");
   const ate = txt(d, "data_fim") || de;
   if (!dataValida(de) || !dataValida(ate) || ate < de) return { erro: "Confira as datas." };
@@ -205,7 +205,8 @@ export async function adicionarBloqueio(_: ResultadoAcao, d: FormData): Promise<
     .from("bloqueios")
     .insert({
       barbearia_id: barbearia.id,
-      profissional_id: txt(d, "profissional_id") || null,
+      // barbeiro só bloqueia a própria agenda; o dono pode fechar a barbearia toda
+      profissional_id: dono ? txt(d, "profissional_id") || null : meuProfissional?.id,
       inicio: inicio.toISOString(),
       fim: fim.toISOString(),
       motivo: opcional(d, "motivo"),
@@ -218,12 +219,12 @@ export async function adicionarBloqueio(_: ResultadoAcao, d: FormData): Promise<
 
 /** Atalho da agenda: "não vou atender neste dia". */
 export async function bloquearDia(d: FormData) {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia, dono, meuProfissional } = await exigirBarbearia();
   const dia = txt(d, "data");
   if (!dataValida(dia)) return;
   await supabase.from("bloqueios").insert({
     barbearia_id: barbearia.id,
-    profissional_id: txt(d, "profissional_id") || null,
+    profissional_id: dono ? txt(d, "profissional_id") || null : meuProfissional?.id,
     inicio: localParaDate(dia, "00:00", barbearia.fuso).toISOString(),
     fim: localParaDate(somarDias(dia, 1), "00:00", barbearia.fuso).toISOString(),
     motivo: "Dia fechado",
@@ -263,24 +264,89 @@ export async function removerExtra(d: FormData) {
   revalidatePath("/painel", "layout");
 }
 
+const TITULOS = ["Barbeiro", "Barbeira"];
+
+/** Dono: cadastra/edita um profissional (também quem ainda não tem conta). */
 export async function salvarProfissional(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia } = await exigirDono();
   const id = txt(d, "id");
   const nome = txt(d, "nome");
+  const titulo = TITULOS.includes(txt(d, "titulo")) ? txt(d, "titulo") : "Barbeiro";
   if (!nome) return { erro: "Informe o nome." };
   const q = id
-    ? supabase.from("profissionais").update({ nome, ativo: d.get("ativo") === "on" }).eq("id", id).select("id")
-    : supabase.from("profissionais").insert({ barbearia_id: barbearia.id, nome }).select("id");
+    ? supabase.from("profissionais").update({ nome, titulo, ativo: d.get("ativo") === "on" }).eq("id", id).select("id")
+    : supabase.from("profissionais").insert({ barbearia_id: barbearia.id, nome, titulo }).select("id");
   const { data, error } = await q;
   if (error) return falha(error);
   revalidatePath("/painel", "layout");
-  return semEfeito(data) ?? { ok: id ? "Profissional atualizado." : "Profissional adicionado. Agora defina os horários dele." };
+  return semEfeito(data) ?? { ok: id ? "Profissional atualizado." : "Profissional adicionado. Defina os horários dele em Horários e folgas." };
+}
+
+/** Meu perfil (o dono também pode editar o perfil de qualquer profissional). */
+export async function salvarPerfil(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
+  const { supabase, dono, meuProfissional } = await exigirBarbearia();
+  const id = dono && txt(d, "id") ? txt(d, "id") : meuProfissional?.id;
+  if (!id) return { erro: "Seu cadastro de profissional não foi encontrado." };
+  const nome = txt(d, "nome");
+  if (nome.length < 2) return { erro: "Informe seu nome completo." };
+  const { data, error } = await supabase
+    .from("profissionais")
+    .update({
+      nome,
+      titulo: TITULOS.includes(txt(d, "titulo")) ? txt(d, "titulo") : "Barbeiro",
+      bio: opcional(d, "bio"),
+    })
+    .eq("id", id)
+    .select("id");
+  if (error) return falha(error);
+  revalidatePath("/painel", "layout");
+  return semEfeito(data) ?? { ok: "Perfil salvo." };
+}
+
+/** Depois de enviar a foto ao Storage, grava o endereço dela. */
+export async function salvarFoto(tipo: "profissional" | "capa", id: string, url: string): Promise<ResultadoAcao> {
+  const { supabase, barbearia } = await exigirBarbearia();
+  if (!url.startsWith(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/fotos/`)) return { erro: "Endereço de foto inválido." };
+  const { data, error } =
+    tipo === "capa"
+      ? await supabase.from("barbearias").update({ capa_url: url }).eq("id", barbearia.id).select("id")
+      : await supabase.from("profissionais").update({ foto_url: url }).eq("id", id).eq("barbearia_id", barbearia.id).select("id");
+  if (error) return falha(error);
+  revalidatePath("/", "layout");
+  return semEfeito(data) ?? { ok: "Foto atualizada." };
+}
+
+export async function removerFoto(tipo: "profissional" | "capa", id: string) {
+  const { supabase, barbearia } = await exigirBarbearia();
+  if (tipo === "capa") await supabase.from("barbearias").update({ capa_url: null }).eq("id", barbearia.id);
+  else await supabase.from("profissionais").update({ foto_url: null }).eq("id", id).eq("barbearia_id", barbearia.id);
+  revalidatePath("/", "layout");
+}
+
+// ---------------------------------------------------------------- equipe
+
+export async function criarConvite(d: FormData) {
+  const { supabase, barbearia } = await exigirDono();
+  await supabase.from("convites").insert({ barbearia_id: barbearia.id, profissional_id: txt(d, "profissional_id") || null });
+  revalidatePath("/painel/equipe");
+}
+
+export async function apagarConvite(d: FormData) {
+  const { supabase } = await exigirDono();
+  await supabase.from("convites").delete().eq("id", txt(d, "id"));
+  revalidatePath("/painel/equipe");
+}
+
+export async function removerDaEquipe(d: FormData) {
+  const { supabase } = await exigirDono();
+  await supabase.rpc("remover_da_equipe", { p_profissional: txt(d, "id") });
+  revalidatePath("/painel", "layout");
 }
 
 // ---------------------------------------------------------------- agendamentos
 
 export async function novoAgendamento(_: ResultadoAcao, d: FormData): Promise<ResultadoAcao> {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia, dono, meuProfissional } = await exigirBarbearia();
   const dia = txt(d, "data");
   const h = txt(d, "hora");
   const servicos = d.getAll("servicos").map(String).filter(Boolean);
@@ -305,7 +371,7 @@ export async function novoAgendamento(_: ResultadoAcao, d: FormData): Promise<Re
 
   const { error } = await supabase.rpc("agendar_pelo_painel", {
     p_barbearia: barbearia.id,
-    p_profissional: txt(d, "profissional_id"),
+    p_profissional: dono ? txt(d, "profissional_id") : meuProfissional?.id,
     p_inicio: localParaDate(dia, h, barbearia.fuso).toISOString(),
     p_servicos: servicos,
     p_cliente: cliente,

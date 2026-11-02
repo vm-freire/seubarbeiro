@@ -1,18 +1,25 @@
-# Agenda de Barbearia
+# Seu Barbeiro
+
+**Seu Barbeiro** é a marca do site (aparece para todos). Cada dono cadastra a
+sua barbearia, que aparece com o próprio nome ("Barbearia X por Seu Barbeiro").
+Logo vetorial: `src/components/Logo.tsx` (versão estática em
+`public/logo-seu-barbeiro.svg` e o ícone da aba em `src/app/icon.svg`).
 
 Sistema de agendamento para várias barbearias (cada uma com seu link
 `/b/<nome>`), com confirmação pelo WhatsApp, agenda do barbeiro, preços
 e promoções e fechamento de caixa.
 
 **Stack:** Next.js 16 (App Router) + TypeScript + Tailwind 4, Supabase
-(Postgres, RLS, RPCs), hospedagem na Vercel. O visual atual é provisório.
+(Postgres, RLS, RPCs), hospedagem na Vercel. Animações de rolagem em CSS puro (respeitam “reduzir movimento”; navegador sem
+suporte mostra tudo sem animação).
 
 ## Como ligar (primeira vez)
 
 1. Crie um projeto **novo** no [Supabase](https://supabase.com) (não use o
    banco de outro sistema).
 2. No Supabase, abra **SQL Editor**, cole o conteúdo de
-   `supabase/migrations/001_inicial.sql` e rode.
+   `supabase/migrations/001_inicial.sql` e rode. Depois faça o mesmo com
+   `002_equipe_fotos.sql` (equipe, convites, fotos e relatórios por profissional).
 3. Em **Authentication → Sign In / Providers → Email**: para testar mais
    rápido, desligue **Confirm email**. Em produção, deixe ligado e configure
    em **URL Configuration** o endereço do site.
@@ -22,9 +29,14 @@ e promoções e fechamento de caixa.
 
 ## Fluxo
 
-- **Barbeiro:** cria conta → cria a barbearia (já vem com serviços e horários
-  de exemplo) → ajusta em Serviços, Horários e Configurações → divulga o link.
-- **Cliente:** abre o link → escolhe serviços, dia e hora → entra ou cria conta
+- **Dono:** cria conta → cria a barbearia (já vem com serviços e horários
+  de exemplo, e ele mesmo como profissional) → ajusta Serviços, Horários e
+  Barbearia (capa) → em **Equipe**, gera um link de convite para cada barbeiro.
+- **Barbeiro da equipe:** abre o convite → cria conta → escolhe nome e
+  “Barbeiro/Barbeira” → põe foto em **Meu perfil**. Só mexe na própria agenda,
+  nos próprios clientes e vê só o próprio relatório. O dono vê e emite tudo.
+- Barbearia de um profissional só: o dono é o único profissional.
+- **Cliente:** abre o link → escolhe o profissional (foto, nome e título) → serviços, dia e hora → entra ou cria conta
   (nome, WhatsApp, e-mail, senha; fica conectado no aparelho) → recebe a
   página do horário (`/c/<código>`) com **Vou / Não vou** e rota no Google Maps.
 - **Confirmação:** a tela **Hoje** do painel lista os lembretes. Um toque abre
@@ -32,7 +44,8 @@ e promoções e fechamento de caixa.
   resposta fica **amarelo**, “Vou” fica **verde**.
 - **Caixa:** em cada horário, “Fechar atendimento” registra o valor cobrado
   (dá para dar desconto), serviços extras e a forma de pagamento. Em
-  **Relatórios**: hoje, semana, 7 dias, mês, ano ou qualquer período.
+  **Relatórios**: hoje, semana, 7 dias, mês, ano ou qualquer período; o dono
+  escolhe “Todos” ou um profissional.
 
 ## WhatsApp
 

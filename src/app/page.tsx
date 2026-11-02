@@ -1,45 +1,138 @@
 import Link from "next/link";
 import { Cabecalho } from "@/components/Cabecalho";
+import { LogoMarca } from "@/components/Logo";
+import { Rodape } from "@/components/Rodape";
 
 const recursos = [
-  ["Agendamento pelo link", "O cliente escolhe serviço, dia e horário pelo celular. Sem ligação, sem conversa longa."],
-  ["Confirmação pelo WhatsApp", "Antes do horário, o cliente responde Vou ou Não vou. Se não vier, o horário fica livre."],
-  ["Agenda do seu jeito", "Dias e horários de atendimento, folgas, horários extras e até quando a agenda fica aberta."],
-  ["Preços e promoções", "Tabela de serviços, combos e promoções por dia da semana ou por período."],
-  ["Fechamento de caixa", "Quantos cortes, barbas e sobrancelhas, e quanto entrou no Pix, débito, crédito e dinheiro."],
-  ["Rota no mapa", "Cliente novo toca num botão e o Google Maps mostra o caminho até a barbearia."],
+  ["01", "Agenda pelo link", "O cliente escolhe o barbeiro, o serviço, o dia e o horário pelo celular. Sem ligação, sem conversa longa."],
+  ["02", "Confirmação no WhatsApp", "Antes do horário ele responde Vou ou Não vou. Se não vier, o horário volta a ficar livre."],
+  ["03", "Sua equipe", "Convide seus barbeiros. Cada um cuida da própria agenda; você enxerga tudo."],
+  ["04", "Preços e promoções", "Tabela de serviços, combos e promoções por dia da semana ou período."],
+  ["05", "Fechamento de caixa", "Cortes, barbas e sobrancelhas do dia, e quanto entrou no Pix, débito, crédito e dinheiro."],
+  ["06", "Rota no mapa", "Cliente novo toca num botão e o Google Maps mostra o caminho até você."],
 ];
+
+const passos = [
+  ["Crie sua barbearia", "Nome, link, serviços e horários. Já vem um exemplo pronto para ajustar."],
+  ["Mande o link", "Coloque na resposta automática do WhatsApp e no Instagram."],
+  ["Atenda e feche o caixa", "A agenda se enche sozinha e o relatório sai com um toque."],
+];
+
+const palavras = ["Corte", "Barba", "Sobrancelha", "Degradê", "Pigmentação", "Combo", "Navalhado", "Pezinho"];
 
 export default function Home() {
   return (
     <>
       <Cabecalho />
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-12">
-        <section className="max-w-2xl">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">A agenda da sua barbearia, sem furo.</h1>
-          <p className="mt-4 text-lg text-suave">
-            Seus clientes marcam pelo link, confirmam pelo WhatsApp e você fecha o caixa do dia com um toque.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/cadastro?tipo=barbeiro" className="btn-primario">Cadastrar minha barbearia</Link>
-            <Link href="/entrar" className="btn">Já tenho conta</Link>
-          </div>
-          <p className="mt-3 text-sm text-suave">Gratuito durante o período de testes.</p>
-        </section>
-
-        <section className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {recursos.map(([t, d]) => (
-            <div key={t} className="cartao">
-              <h2 className="font-semibold">{t}</h2>
-              <p className="mt-1 text-sm text-suave">{d}</p>
+      <main className="flex-1 overflow-x-clip">
+        {/* Abertura */}
+        <section className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pt-10 pb-16 md:grid-cols-[1.2fr_1fr] md:pt-16">
+          <div>
+            <p className="sobretitulo entrar">Agendamento para barbearias</p>
+            <h1 className="mt-3 font-titulo text-6xl leading-[0.9] font-black uppercase sm:text-7xl lg:text-8xl">
+              <span className="entrar block" style={{ "--atraso": "80ms" } as React.CSSProperties}>A cadeira</span>
+              <span className="entrar block text-destaque" style={{ "--atraso": "180ms" } as React.CSSProperties}>sempre cheia.</span>
+              <span className="entrar block" style={{ "--atraso": "280ms" } as React.CSSProperties}>Sem furo.</span>
+            </h1>
+            <p className="entrar mt-6 max-w-md text-lg text-suave" style={{ "--atraso": "380ms" } as React.CSSProperties}>
+              Seus clientes marcam pelo link, confirmam pelo WhatsApp e você fecha o caixa do dia com um toque.
+            </p>
+            <div className="entrar mt-8 flex flex-wrap gap-3" style={{ "--atraso": "480ms" } as React.CSSProperties}>
+              <Link href="/cadastro?tipo=barbeiro" className="btn-primario px-7 text-base">Cadastrar minha barbearia</Link>
+              <Link href="/entrar" className="btn px-7 text-base">Já tenho conta</Link>
             </div>
-          ))}
+            <p className="entrar mt-3 text-sm text-suave" style={{ "--atraso": "560ms" } as React.CSSProperties}>Grátis durante o período de testes.</p>
+          </div>
+
+          {/* "Celular" com a mensagem de confirmação */}
+          <div className="entrar relative mx-auto w-full max-w-xs" style={{ "--atraso": "300ms" } as React.CSSProperties}>
+            <div className="faixa-listrada absolute -inset-4 -z-10 rotate-3 rounded-[2.5rem] opacity-90" aria-hidden="true" />
+            <div className="rounded-[2rem] border border-borda bg-superficie p-4" style={{ boxShadow: "var(--sombra)" }}>
+              <div className="mb-3 flex items-center gap-2 border-b border-borda pb-3">
+                <LogoMarca tamanho={34} animado />
+                <div className="leading-tight">
+                  <p className="text-sm font-bold">Barbearia do João</p>
+                  <p className="text-xs text-suave">por Seu Barbeiro</p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <p className="w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2">
+                  Olá, Pedro! Seu horário é <strong>hoje às 15:00</strong> (Corte + Barba).
+                </p>
+                <p className="w-fit max-w-[85%] rounded-2xl rounded-tl-sm bg-superficie-2 px-3 py-2">Você vem?</p>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <span className="rounded-full bg-[var(--verde-fundo)] py-2 text-center font-bold text-[var(--verde-texto)]">Vou ✓</span>
+                  <span className="rounded-full border border-borda py-2 text-center font-semibold text-suave">Não vou</span>
+                </div>
+                <p className="ml-auto w-fit rounded-2xl rounded-tr-sm bg-[var(--verde-fundo)] px-3 py-2 text-[var(--verde-texto)]">Confirmado. Até lá! 💈</p>
+              </div>
+            </div>
+          </div>
         </section>
 
-        <p className="mt-16 text-sm text-suave">
-          É cliente? Peça à sua barbearia o link de agendamento.
-        </p>
+        {/* Letreiro */}
+        <div className="border-y border-borda bg-texto py-3 text-fundo" aria-hidden="true">
+          <div className="letreiro flex w-max gap-8 font-titulo text-2xl font-extrabold tracking-wider uppercase">
+            {[...palavras, ...palavras].map((p, i) => (
+              <span key={i} className="flex items-center gap-8">
+                {p} <span className="text-destaque">✦</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Recursos */}
+        <section className="relative mx-auto max-w-6xl px-4 pt-24 pb-16">
+          <span className="titulo-fundo" aria-hidden="true">Recursos</span>
+          <div className="relative text-center">
+            <p className="sobretitulo">Tudo num lugar só</p>
+            <h2 className="titulo mt-2 text-4xl sm:text-5xl">Feito para a rotina da barbearia</h2>
+          </div>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {recursos.map(([n, t, d]) => (
+              <article key={t} className="revelar cartao group transition hover:-translate-y-1 hover:border-destaque">
+                <span className="font-titulo text-4xl font-black text-destaque/80 transition group-hover:text-destaque">{n}</span>
+                <h3 className="mt-2 font-titulo text-2xl font-extrabold uppercase">{t}</h3>
+                <p className="mt-1 text-sm text-suave">{d}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* Como funciona */}
+        <section className="relative bg-fundo-2 py-24">
+          <span className="titulo-fundo" aria-hidden="true">Simples</span>
+          <div className="relative mx-auto max-w-6xl px-4">
+            <div className="text-center">
+              <p className="sobretitulo">Como funciona</p>
+              <h2 className="titulo mt-2 text-4xl sm:text-5xl">Em três passos</h2>
+            </div>
+            <ol className="mt-12 grid gap-6 md:grid-cols-3">
+              {passos.map(([t, d], i) => (
+                <li key={t} className="revelar relative pl-16">
+                  <span className="absolute top-0 left-0 grid size-12 place-items-center rounded-full bg-destaque font-titulo text-2xl font-black text-destaque-texto">
+                    {i + 1}
+                  </span>
+                  <h3 className="font-titulo text-2xl font-extrabold uppercase">{t}</h3>
+                  <p className="mt-1 text-suave">{d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* Chamada final */}
+        <section className="mx-auto max-w-6xl px-4 py-24">
+          <div className="revelar relative overflow-hidden rounded-3xl bg-texto px-6 py-14 text-center text-fundo" style={{ "--logo-contorno": "var(--fundo)" } as React.CSSProperties}>
+            <div className="faixa-listrada absolute inset-x-0 top-0 h-3" aria-hidden="true" />
+            <LogoMarca tamanho={64} animado className="mx-auto" />
+            <h2 className="mt-4 font-titulo text-4xl font-black uppercase sm:text-6xl">Bora encher essa agenda?</h2>
+            <p className="mx-auto mt-3 max-w-md opacity-80">Leva dois minutos para criar a sua barbearia.</p>
+            <Link href="/cadastro?tipo=barbeiro" className="btn-primario mt-8 px-8 text-base">Começar agora</Link>
+          </div>
+        </section>
       </main>
+      <Rodape />
     </>
   );
 }

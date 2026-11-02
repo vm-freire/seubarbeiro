@@ -77,19 +77,27 @@ function Tabela({ titulo, colunas, linhas }: { titulo: string; colunas: string[]
 
 export default async function Page({ searchParams }: PageProps<"/painel/relatorios">) {
   const sp = await searchParams;
-  const { supabase, barbearia: b } = await exigirBarbearia();
+  const { supabase, barbearia: b, dono, meuProfissional } = await exigirBarbearia();
   const hoje = hojeLocal(b.fuso);
   const { p, de, ate } = periodo(sp, hoje);
-  const { data, error } = await supabase.rpc("relatorio_caixa", { p_barbearia: b.id, p_de: de, p_ate: ate });
+  // dono escolhe: todos ou um profissional; barbeiro sempre vê só o dele (o banco garante)
+  const { data: equipe } = dono
+    ? await supabase.from("profissionais").select("id, nome").eq("barbearia_id", b.id).order("ordem").order("nome")
+    : { data: [] as { id: string; nome: string }[] };
+  const prof = dono ? (equipe ?? []).find((x) => x.id === sp.prof)?.id ?? null : meuProfissional?.id ?? null;
+  const nomeProf = dono ? (equipe ?? []).find((x) => x.id === prof)?.nome : meuProfissional?.nome;
+  const { data, error } = await supabase.rpc("relatorio_caixa", { p_barbearia: b.id, p_de: de, p_ate: ate, p_profissional: prof });
+  const comProf = (q: string) => `/painel/relatorios?${q}${prof && dono ? `&prof=${prof}` : ""}`;
+  const periodoQuery = p === "livre" ? `p=livre&de=${de}&ate=${ate}` : `p=${p}`;
   const r = data as Relatorio | null;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="titulo">Relatórios</h1>
+          <h1 className="titulo text-4xl">{dono ? "Relatórios" : "Meu relatório"}</h1>
           <p className="text-sm text-suave">
-            {b.nome} · {de === ate ? dataCurta(de) : `${dataCurta(de)} a ${dataCurta(ate)}`}
+            {b.nome} · {nomeProf ?? "Todos os profissionais"} · {de === ate ? dataCurta(de) : `${dataCurta(de)} a ${dataCurta(ate)}`}
           </p>
         </div>
         <BotaoImprimir />
@@ -97,13 +105,26 @@ export default async function Page({ searchParams }: PageProps<"/painel/relatori
 
       <nav className="nao-imprimir flex flex-wrap gap-2" aria-label="Período">
         {ATALHOS.map(([v, rotulo]) => (
-          <Link key={v} href={`/painel/relatorios?p=${v}`} aria-current={p === v ? "page" : undefined} className={p === v ? "btn-primario btn-pequeno" : "btn btn-pequeno"}>
+          <Link key={v} href={comProf(`p=${v}`)} aria-current={p === v ? "page" : undefined} className={p === v ? "btn-primario btn-pequeno" : "btn btn-pequeno"}>
             {rotulo}
           </Link>
         ))}
       </nav>
+      {dono && (equipe ?? []).length > 1 && (
+        <nav className="nao-imprimir flex flex-wrap gap-2" aria-label="Profissional">
+          <Link href={`/painel/relatorios?${periodoQuery}`} aria-current={!prof ? "page" : undefined} className={!prof ? "btn-primario btn-pequeno" : "btn btn-pequeno"}>
+            Todos
+          </Link>
+          {(equipe ?? []).map((x) => (
+            <Link key={x.id} href={`/painel/relatorios?${periodoQuery}&prof=${x.id}`} aria-current={prof === x.id ? "page" : undefined} className={prof === x.id ? "btn-primario btn-pequeno" : "btn btn-pequeno"}>
+              {x.nome}
+            </Link>
+          ))}
+        </nav>
+      )}
       <form className="nao-imprimir flex flex-wrap items-end gap-2">
         <input type="hidden" name="p" value="livre" />
+        {prof && dono && <input type="hidden" name="prof" value={prof} />}
         <div>
           <label className="rotulo text-xs" htmlFor="de">De</label>
           <input id="de" name="de" type="date" defaultValue={de} className="campo" />
@@ -165,7 +186,7 @@ export default async function Page({ searchParams }: PageProps<"/painel/relatori
               colunas={["Serviço", "Qtd.", "Promo.", "Valor"]}
               linhas={r.por_servico.map((x) => [x.nome, x.qtd, x.promocoes, moeda(x.valor)])}
             />
-            {r.por_profissional.length > 1 && (
+            {!prof && r.por_profissional.length > 1 && (
               <Tabela titulo="Por profissional" colunas={["Profissional", "Atend.", "Valor"]} linhas={r.por_profissional.map((x) => [x.nome, x.qtd, moeda(x.valor)])} />
             )}
             {de !== ate && (

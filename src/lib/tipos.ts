@@ -19,9 +19,23 @@ export type Barbearia = {
   plano: string;
   assinatura_status: "teste" | "ativa" | "atrasada" | "suspensa" | "cancelada";
   assinatura_valida_ate: string | null;
+  capa_url: string | null;
+  logo_url: string | null;
 };
 
-export type Profissional = { id: string; barbearia_id: string; nome: string; ativo: boolean; ordem: number };
+export type Titulo = "Barbeiro" | "Barbeira";
+
+export type Profissional = {
+  id: string;
+  barbearia_id: string;
+  nome: string;
+  ativo: boolean;
+  ordem: number;
+  user_id: string | null;
+  foto_url: string | null;
+  titulo: Titulo;
+  bio: string | null;
+};
 
 export type Servico = {
   id: string;
@@ -107,7 +121,7 @@ export type Agendamento = {
 
 export type AgendamentoCompleto = Agendamento & {
   clientes: Pick<Cliente, "id" | "nome" | "telefone"> | null;
-  profissionais: Pick<Profissional, "id" | "nome"> | null;
+  profissionais: Pick<Profissional, "id" | "nome" | "foto_url"> | null;
   agendamento_itens: Item[];
 };
 

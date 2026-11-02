@@ -1,7 +1,7 @@
 import { BotaoEnviar } from "@/components/BotaoEnviar";
 import { FormularioAcao } from "@/components/FormularioAcao";
 import { CATEGORIAS, dataCurta, moeda } from "@/lib/formatar";
-import { exigirBarbearia } from "@/lib/painel";
+import { exigirDono } from "@/lib/painel";
 import { NOMES_DIAS_CURTOS } from "@/lib/tempo";
 import type { Promocao, Servico } from "@/lib/tipos";
 import { alternarPromocao, removerPromocao, removerServico, salvarPromocao, salvarServico } from "../acoes";
@@ -54,7 +54,7 @@ function descreverPromocao(p: Promocao) {
 }
 
 export default async function Page() {
-  const { supabase, barbearia } = await exigirBarbearia();
+  const { supabase, barbearia } = await exigirDono();
   const [{ data: sv }, { data: pr }] = await Promise.all([
     supabase.from("servicos").select("*").eq("barbearia_id", barbearia.id).order("ordem").order("nome"),
     supabase.from("promocoes").select("*").eq("barbearia_id", barbearia.id).order("criado_em", { ascending: false }),

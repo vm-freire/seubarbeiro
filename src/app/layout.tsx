@@ -1,25 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Big_Shoulders, Manrope } from "next/font/google";
+import { MARCA } from "@/lib/marca";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const titulo = Big_Shoulders({ variable: "--font-titulo-fonte", subsets: ["latin", "latin-ext"], weight: ["600", "800", "900"] });
+const texto = Manrope({ variable: "--font-texto-fonte", subsets: ["latin", "latin-ext"] });
 
 export const metadata: Metadata = {
-  title: { default: "Agenda de Barbearia", template: "%s · Agenda de Barbearia" },
+  title: { default: `${MARCA} · Agende seu horário`, template: `%s · ${MARCA}` },
   description: "Agendamento online para barbearias, com confirmação pelo WhatsApp.",
+  applicationName: MARCA,
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f4f0" },
-    { media: "(prefers-color-scheme: dark)", color: "#141210" },
+    { media: "(prefers-color-scheme: light)", color: "#f3ede2" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0d0c" },
   ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+    <html lang="pt-BR" className={`${titulo.variable} ${texto.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col font-texto">{children}</body>
     </html>
   );
 }

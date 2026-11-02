@@ -14,7 +14,7 @@ export const metadata = { title: "Agenda" };
 
 export default async function Page({ searchParams }: PageProps<"/painel/agenda">) {
   const sp = await searchParams;
-  const { supabase, barbearia: b } = await exigirBarbearia();
+  const { supabase, barbearia: b, dono, meuProfissional } = await exigirBarbearia();
   const hoje = hojeLocal(b.fuso);
   const dia = dataValida(sp.d) ? sp.d : hoje;
   const semana = inicioDaSemana(dia);
@@ -27,7 +27,8 @@ export default async function Page({ searchParams }: PageProps<"/painel/agenda">
   const diaDe = (iso: string) => partesLocais(new Date(iso), b.fuso).data;
   const lista = daSemana.filter((a) => diaDe(a.inicio) === dia);
 
-  const ativos = cfg.profissionais.filter((p) => p.ativo);
+  // barbeiro só trabalha na própria agenda (o banco garante; aqui só some da tela)
+  const ativos = cfg.profissionais.filter((p) => p.ativo && (dono || p.id === meuProfissional?.id));
   const multiplos = ativos.length > 1;
   const profPadrao = ativos.find((p) => p.id === sp.p)?.id ?? ativos[0]?.id;
 
@@ -65,7 +66,7 @@ export default async function Page({ searchParams }: PageProps<"/painel/agenda">
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="titulo">Agenda</h1>
+        <h1 className="titulo text-4xl">{dono ? "Agenda" : "Minha agenda"}</h1>
         <div className="flex gap-2">
           <Link href={`/painel/agenda?d=${somarDias(semana, -7)}`} className="btn btn-pequeno">← Semana anterior</Link>
           <Link href={`/painel/agenda?d=${hoje}`} className="btn btn-pequeno">Hoje</Link>
@@ -95,7 +96,7 @@ export default async function Page({ searchParams }: PageProps<"/painel/agenda">
             {bloqueiosDoDia.length === 0 && (
               <form action={bloquearDia}>
                 <input type="hidden" name="data" value={dia} />
-                <button className="btn-perigo btn-pequeno">Não vou atender neste dia</button>
+                <button className="btn-perigo btn-pequeno">{dono ? "Fechar a barbearia neste dia" : "Não vou atender neste dia"}</button>
               </form>
             )}
           </div>

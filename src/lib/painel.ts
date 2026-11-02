@@ -3,13 +3,16 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "./supabase/server";
-import type { Barbearia } from "./tipos";
+import type { Barbearia, Profissional } from "./tipos";
 
 export const COOKIE_BARBEARIA = "barbearia_atual";
 
 /**
  * Usuário logado + barbearia que ele está gerenciando. Quem tem mais de
  * uma barbearia escolhe pelo seletor do menu (fica salvo num cookie).
+ *
+ * Papéis: "dono" mexe em tudo; "barbeiro" só no que é dele (agenda,
+ * horários, clientes, perfil e relatório próprios). O banco garante isso.
  */
 export const contextoPainel = cache(async () => {
   const supabase = await createClient();
@@ -30,12 +33,31 @@ export const contextoPainel = cache(async () => {
   const escolhida = (await cookies()).get(COOKIE_BARBEARIA)?.value;
   const atual = lista.find((m) => m.barbearia.id === escolhida) ?? lista[0] ?? null;
 
-  return { supabase, user, barbearias: lista.map((m) => m.barbearia), atual };
+  let meuProfissional: Profissional | null = null;
+  if (atual) {
+    const { data } = await supabase
+      .from("profissionais")
+      .select("*")
+      .eq("barbearia_id", atual.barbearia.id)
+      .eq("user_id", user.id)
+      .maybeSingle<Profissional>();
+    meuProfissional = data;
+  }
+
+  return { supabase, user, barbearias: lista.map((m) => m.barbearia), atual, meuProfissional };
 });
 
 /** Para páginas e ações que exigem uma barbearia já criada. */
 export async function exigirBarbearia() {
   const ctx = await contextoPainel();
   if (!ctx.atual) redirect("/painel");
-  return { ...ctx, barbearia: ctx.atual.barbearia, papel: ctx.atual.papel };
+  const dono = ctx.atual.papel === "dono";
+  return { ...ctx, barbearia: ctx.atual.barbearia, papel: ctx.atual.papel, dono };
+}
+
+/** Páginas só do dono (serviços, configurações, equipe). */
+export async function exigirDono() {
+  const ctx = await exigirBarbearia();
+  if (!ctx.dono) redirect("/painel");
+  return ctx;
 }

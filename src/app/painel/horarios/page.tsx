@@ -13,7 +13,6 @@ import {
   removerExtra,
   salvarAgendaAberta,
   salvarHorariosSemana,
-  salvarProfissional,
 } from "../acoes";
 
 export const metadata = { title: "Horários e folgas" };
@@ -71,10 +70,11 @@ function FormSemana({ p, horarios }: { p: Profissional; horarios: HorarioSemana[
 }
 
 export default async function Page() {
-  const { supabase, barbearia: b } = await exigirBarbearia();
+  const { supabase, barbearia: b, dono, meuProfissional } = await exigirBarbearia();
   const cfg = await configuracaoAgenda(supabase, b.id);
   const hoje = hojeLocal(b.fuso);
-  const ativos = cfg.profissionais.filter((p) => p.ativo);
+  // dono vê a equipe toda; barbeiro só a própria agenda
+  const ativos = cfg.profissionais.filter((p) => p.ativo && (dono || p.id === meuProfissional?.id));
   const nomeProf = (id: string | null) => (id ? cfg.profissionais.find((p) => p.id === id)?.nome ?? "" : "Todos");
   const quandoBloqueio = (ini: string, fim: string) => {
     const a = partesLocais(new Date(ini), b.fuso);
@@ -91,6 +91,7 @@ export default async function Page() {
         <p className="text-sm text-suave">O cliente só vê os horários que cabem no expediente, fora das folgas e dos horários já ocupados.</p>
       </section>
 
+      {dono && (
       <section className="cartao">
         <h2 className="subtitulo mb-1">Abertura da agenda</h2>
         <p className="mb-3 text-sm text-suave">
@@ -109,6 +110,7 @@ export default async function Page() {
         </FormularioAcao>
         <p className="ajuda mt-2">Para “abrir a semana”, coloque no segundo campo o último dia da semana que você quer liberar.</p>
       </section>
+      )}
 
       {ativos.map((p) => (
         <section key={p.id} className="cartao">
@@ -119,7 +121,10 @@ export default async function Page() {
 
       <section className="cartao">
         <h2 className="subtitulo mb-1">Folgas e bloqueios</h2>
-        <p className="mb-3 text-sm text-suave">Dia que você não vai atender, feriado, consulta médica… O sistema esconde esses horários dos clientes.</p>
+        <p className="mb-3 text-sm text-suave">
+          Dia que você não vai atender, feriado, consulta médica… O sistema esconde esses horários dos clientes.
+          {!dono && " Os bloqueios valem só para a sua agenda."}
+        </p>
         {cfg.bloqueios.length > 0 && (
           <ul className="mb-4 divide-y divide-borda rounded-lg border border-borda">
             {cfg.bloqueios.map((x) => (
@@ -161,7 +166,7 @@ export default async function Page() {
             </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
-            {ativos.length > 1 && (
+            {dono && ativos.length > 1 && (
               <select name="profissional_id" className="campo" defaultValue="" aria-label="Para quem">
                 <option value="">Barbearia toda</option>
                 {ativos.map((p) => (
@@ -220,28 +225,6 @@ export default async function Page() {
         </FormularioAcao>
       </section>
 
-      <section className="cartao">
-        <h2 className="subtitulo mb-1">Profissionais</h2>
-        <p className="mb-3 text-sm text-suave">Se mais de um barbeiro atende, o cliente escolhe com quem quer cortar.</p>
-        <ul className="mb-4 space-y-2">
-          {cfg.profissionais.map((p) => (
-            <li key={p.id}>
-              <FormularioAcao acao={salvarProfissional} className="flex flex-wrap items-center gap-2">
-                <input type="hidden" name="id" value={p.id} />
-                <input name="nome" defaultValue={p.nome} className="campo max-w-xs" aria-label="Nome do profissional" />
-                <label className="flex items-center gap-1 text-sm">
-                  <input type="checkbox" name="ativo" defaultChecked={p.ativo} /> Atendendo
-                </label>
-                <BotaoEnviar className="btn btn-pequeno">Salvar</BotaoEnviar>
-              </FormularioAcao>
-            </li>
-          ))}
-        </ul>
-        <FormularioAcao acao={salvarProfissional} limparAoSalvar className="flex flex-wrap gap-2">
-          <input name="nome" className="campo max-w-xs" placeholder="Nome do novo barbeiro" required />
-          <BotaoEnviar className="btn" pendente="Adicionando…">Adicionar</BotaoEnviar>
-        </FormularioAcao>
-      </section>
     </div>
   );
 }

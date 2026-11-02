@@ -5,7 +5,7 @@ import type { AgendamentoCompleto, Bloqueio, HorarioExtra, HorarioSemana, Profis
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
-export const SELECT_AGENDAMENTO = "*, clientes(id, nome, telefone), profissionais(id, nome), agendamento_itens(*)";
+export const SELECT_AGENDAMENTO = "*, clientes(id, nome, telefone), profissionais(id, nome, foto_url), agendamento_itens(*)";
 
 /** Agendamentos com início entre os dias `de` e `ate` (inclusive), no fuso da barbearia. */
 export async function agendamentosEntre(supabase: SupabaseClient, barbeariaId: string, fuso: string, de: string, ate: string) {

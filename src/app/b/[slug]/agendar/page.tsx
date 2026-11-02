@@ -19,10 +19,10 @@ export default async function Page({ params, searchParams }: PageProps<"/b/[slug
 
   return (
     <>
-      <Cabecalho />
+      <Cabecalho barbearia={d.barbearia.nome} link={`/b/${slug}`} />
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
         <Link href={`/b/${slug}`} className="text-sm text-suave underline">← {d.barbearia.nome}</Link>
-        <h1 className="titulo mt-2 mb-6">Agendar horário</h1>
+        <h1 className="titulo entrar mt-2 mb-6 text-4xl">Agendar horário</h1>
         {assinaturaLiberada(d.barbearia) ? (
           <Agendador
             dados={d}

@@ -12,7 +12,7 @@ import { CartaoAgendamento } from "./componentes/CartaoAgendamento";
 export const metadata = { title: "Hoje" };
 
 export default async function Page() {
-  const { supabase, barbearia: b } = await exigirBarbearia();
+  const { supabase, barbearia: b, dono } = await exigirBarbearia();
   const hoje = hojeLocal(b.fuso);
   const [lista, amanha, cfg] = await Promise.all([
     agendamentosEntre(supabase, b.id, b.fuso, hoje, hoje),
@@ -35,7 +35,8 @@ export default async function Page() {
   });
 
   const link = linkAgendamento(b.slug);
-  const multiplos = cfg.profissionais.filter((p) => p.ativo).length > 1;
+  // barbeiro só recebe os próprios horários (RLS), então não precisa do nome do profissional
+  const multiplos = dono && cfg.profissionais.filter((p) => p.ativo).length > 1;
 
   return (
     <div className="space-y-8">

@@ -1,53 +1,68 @@
 @import "tailwindcss";
 
-/* Visual provisório (o front será refeito depois). Cores em variáveis
-   para trocar a identidade num lugar só. */
+/* =====================================================================
+   Seu Barbeiro — identidade visual
+   Tinta quase preta, papel creme, vermelho de poste de barbeiro e latão.
+   ===================================================================== */
 :root {
-  --fundo: #f6f4f0;
-  --superficie: #ffffff;
-  --superficie-2: #efece6;
-  --texto: #1c1a17;
-  --suave: #6b655c;
-  --borda: #ddd7cc;
-  --destaque: #b45309;
-  --destaque-texto: #ffffff;
-  --amarelo-fundo: #fef3c7;
-  --amarelo-texto: #854d0e;
-  --verde-fundo: #dcfce7;
-  --verde-texto: #166534;
-  --vermelho-fundo: #fee2e2;
-  --vermelho-texto: #991b1b;
-  --azul-fundo: #dbeafe;
-  --azul-texto: #1e40af;
-  --cinza-fundo: #ece9e4;
-  --cinza-texto: #57534e;
+  --fundo: #f3ede2;
+  --fundo-2: #ebe3d4;
+  --superficie: #fffcf6;
+  --superficie-2: #f1e9db;
+  --texto: #15110f;
+  --suave: #655b51;
+  --borda: #d9cfbf;
+  --destaque: #b3122a;
+  --destaque-texto: #fffaf2;
+  --latao: #8a6a10;
+  --contorno-gigante: rgba(21, 17, 15, 0.09);
+  --logo-balao: #15110f;
+  --logo-contorno: #15110f;
+  --amarelo-fundo: #fbefc6;
+  --amarelo-texto: #7a4a06;
+  --verde-fundo: #dcf3e2;
+  --verde-texto: #17602f;
+  --vermelho-fundo: #fbe1e1;
+  --vermelho-texto: #9b1c1c;
+  --azul-fundo: #dde8fb;
+  --azul-texto: #1f3f99;
+  --cinza-fundo: #ebe5dc;
+  --cinza-texto: #5a524a;
+  --sombra: 0 1px 2px rgb(21 17 15 / 0.06), 0 8px 24px -12px rgb(21 17 15 / 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --fundo: #141210;
-    --superficie: #1e1b18;
-    --superficie-2: #292520;
-    --texto: #f1ede6;
-    --suave: #a8a196;
-    --borda: #3a352e;
-    --destaque: #f59e0b;
-    --destaque-texto: #1c1a17;
-    --amarelo-fundo: #422006;
-    --amarelo-texto: #fde68a;
-    --verde-fundo: #052e16;
-    --verde-texto: #86efac;
-    --vermelho-fundo: #450a0a;
-    --vermelho-texto: #fca5a5;
-    --azul-fundo: #172554;
-    --azul-texto: #93c5fd;
-    --cinza-fundo: #292524;
-    --cinza-texto: #a8a29e;
+    --fundo: #0f0d0c;
+    --fundo-2: #171412;
+    --superficie: #1b1715;
+    --superficie-2: #26201c;
+    --texto: #f3ede2;
+    --suave: #b0a597;
+    --borda: #3a322c;
+    --destaque: #e0324a;
+    --destaque-texto: #fffaf2;
+    --latao: #d9b440;
+    --contorno-gigante: rgba(243, 237, 226, 0.07);
+    --logo-balao: #15110f;
+    --logo-contorno: #f3ede2;
+    --amarelo-fundo: #3d2a05;
+    --amarelo-texto: #fcd877;
+    --verde-fundo: #0b2e18;
+    --verde-texto: #86e3a4;
+    --vermelho-fundo: #3f0e12;
+    --vermelho-texto: #ffa3a8;
+    --azul-fundo: #13224a;
+    --azul-texto: #a5c1ff;
+    --cinza-fundo: #2a2420;
+    --cinza-texto: #b3aaa0;
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 12px 32px -16px rgb(0 0 0 / 0.7);
   }
 }
 
 @theme inline {
   --color-fundo: var(--fundo);
+  --color-fundo-2: var(--fundo-2);
   --color-superficie: var(--superficie);
   --color-superficie-2: var(--superficie-2);
   --color-texto: var(--texto);
@@ -55,9 +70,14 @@
   --color-borda: var(--borda);
   --color-destaque: var(--destaque);
   --color-destaque-texto: var(--destaque-texto);
-  --font-sans: var(--font-geist-sans);
+  --color-latao: var(--latao);
+  --font-titulo: var(--font-titulo-fonte), "Arial Narrow", sans-serif;
+  --font-texto: var(--font-texto-fonte), system-ui, sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
 body {
   background: var(--fundo);
   color: var(--texto);
@@ -65,37 +85,54 @@ body {
 
 @layer components {
   .cartao {
-    @apply rounded-xl border border-borda bg-superficie p-4;
+    @apply rounded-2xl border border-borda bg-superficie p-4;
+    box-shadow: var(--sombra);
   }
   .btn {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-borda bg-superficie px-4 text-sm font-medium transition-colors hover:bg-superficie-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-borda bg-superficie px-5 text-sm font-semibold text-texto transition duration-200 hover:-translate-y-0.5 hover:border-texto active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
   }
   .btn-primario {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-destaque bg-destaque px-4 text-sm font-semibold text-destaque-texto transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply relative inline-flex min-h-11 items-center justify-center gap-2 overflow-hidden rounded-full border border-destaque bg-destaque px-5 text-sm font-bold text-destaque-texto transition duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0;
+    box-shadow: 0 8px 20px -10px var(--destaque);
+  }
+  /* brilho que passa no botão principal */
+  .btn-primario::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.28) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.6s ease;
+  }
+  .btn-primario:hover::after {
+    transform: translateX(120%);
   }
   .btn-perigo {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-borda bg-superficie px-4 text-sm font-medium text-[var(--vermelho-texto)] transition-colors hover:bg-superficie-2 disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-borda bg-superficie px-5 text-sm font-semibold text-[var(--vermelho-texto)] transition duration-200 hover:border-[var(--vermelho-texto)] disabled:opacity-50;
   }
   .btn-pequeno {
-    @apply min-h-9 px-3 text-xs;
+    @apply min-h-9 px-3.5 text-xs;
   }
   .campo {
-    @apply min-h-11 w-full rounded-lg border border-borda bg-superficie px-3 text-base text-texto placeholder:text-suave;
+    @apply min-h-11 w-full rounded-xl border border-borda bg-superficie px-3 text-base text-texto transition placeholder:text-suave focus:border-destaque;
   }
   .rotulo {
-    @apply mb-1 block text-sm font-medium;
+    @apply mb-1 block text-sm font-semibold;
   }
   .ajuda {
     @apply mt-1 text-xs text-suave;
   }
   .titulo {
-    @apply text-2xl font-bold tracking-tight;
+    @apply font-titulo text-3xl font-extrabold tracking-wide uppercase;
   }
   .subtitulo {
-    @apply text-lg font-semibold;
+    @apply font-titulo text-xl font-extrabold tracking-wide uppercase;
+  }
+  .sobretitulo {
+    @apply text-xs font-bold tracking-[0.25em] text-destaque uppercase;
   }
   .selo {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold;
   }
   .selo-amarelo { background: var(--amarelo-fundo); color: var(--amarelo-texto); }
   .selo-verde { background: var(--verde-fundo); color: var(--verde-texto); }
@@ -103,28 +140,109 @@ body {
   .selo-azul { background: var(--azul-fundo); color: var(--azul-texto); }
   .selo-cinza { background: var(--cinza-fundo); color: var(--cinza-texto); }
   .aviso {
-    @apply rounded-lg px-3 py-2 text-sm;
+    @apply rounded-xl px-3 py-2 text-sm;
+  }
+  /* Palavra gigante em contorno atrás do título da seção (como nas referências) */
+  .titulo-fundo {
+    @apply pointer-events-none absolute inset-x-0 -top-4 overflow-hidden text-center font-titulo leading-none font-black whitespace-nowrap uppercase select-none sm:-top-8;
+    font-size: clamp(4rem, 16vw, 11rem);
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--contorno-gigante);
+  }
+  /* Faixa com fundo de "poste" (listras) */
+  .faixa-listrada {
+    background: repeating-linear-gradient(-55deg, var(--destaque) 0 14px, var(--superficie) 14px 28px);
   }
 }
 
 :focus-visible {
   outline: 2px solid var(--destaque);
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------
+   Animações
+   --------------------------------------------------------------------- */
+@keyframes subir {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes poste {
+  from { transform: translateY(0); }
+  to { transform: translateY(-9px); }
+}
+@keyframes letreiro {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes pulsar {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(37 211 102 / 0.55); }
+  60% { box-shadow: 0 0 0 14px rgb(37 211 102 / 0); }
+}
+
+/* entrada ao carregar (com atraso por item: style={{"--atraso": "120ms"}}) */
+.entrar {
+  animation: subir 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: var(--atraso, 0ms);
+}
+.listras-poste {
+  animation: poste 0.9s linear infinite;
+}
+.letreiro {
+  animation: letreiro 28s linear infinite;
+}
+.pulsar {
+  animation: pulsar 2.4s ease-out infinite;
+}
+
+/* Revelar ao rolar: só onde o navegador suporta animação ligada à rolagem.
+   Onde não suporta, o conteúdo aparece normalmente (nunca fica escondido).
+   Não usar em formulários. */
+@supports (animation-timeline: view()) {
+  .revelar {
+    animation: subir linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 55%;
+  }
+  .revelar-zoom {
+    animation: revelar-zoom linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
+  }
+  .paralaxe {
+    animation: paralaxe linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 100vh;
+  }
+  .cabecalho-rolagem {
+    animation: cabecalho linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 120px;
+  }
+}
+@keyframes revelar-zoom {
+  from { opacity: 0.2; transform: scale(1.12); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes paralaxe {
+  to { transform: translateY(30%) scale(1.08); }
+}
+@keyframes cabecalho {
+  to {
+    background-color: color-mix(in srgb, var(--fundo) 88%, transparent);
+    box-shadow: 0 1px 0 var(--borda);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
-    transition: none !important;
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
     animation: none !important;
+    transition: none !important;
   }
 }
 
 @media print {
-  .nao-imprimir {
-    display: none !important;
-  }
-  body {
-    background: #fff;
-    color: #000;
-  }
+  .nao-imprimir { display: none !important; }
+  body { background: #fff; color: #000; }
 }

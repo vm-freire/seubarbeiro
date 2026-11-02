@@ -23,6 +23,12 @@ await db.exec(`
   create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb);
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('teste.uid', true), '')::uuid $$;
+  create schema storage;
+  grant usage on schema storage to anon, authenticated;
+  create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid default auth.uid());
+  alter table storage.objects enable row level security;
+  grant all on storage.objects to anon, authenticated;
 `);
 
 await db.exec(migracao);
@@ -64,6 +70,8 @@ const ter = (await db.query(`select (date_trunc('week', now() at time zone 'Amer
 const seg = (await db.query(`select ($1::date - 1)::text d`, [ter])).rows[0].d;
 const ts = (d, h) => `${d} ${h}-03`;
 
+const agendarCom = (uid, profissional, inicio, servicos) =>
+  como(uid, `select agendar($1, $2, $3::timestamptz, $4::uuid[]) id`, [barb, profissional, inicio, servicos]);
 const agendar = (uid, inicio, servicos) =>
   como(uid, `select agendar($1, $2, $3::timestamptz, $4::uuid[]) id`, [barb, prof.id, inicio, servicos]);
 
@@ -112,6 +120,50 @@ const rel = (await como(A, `select relatorio_caixa($1, $2::date, $2::date) r`, [
 ok(rel.atendimentos === 2 && Number(rel.total) === 80 && rel.qtd_promocoes === 2 && rel.cancelados === 1, `relatório: ${JSON.stringify({ a: rel.atendimentos, t: rel.total, p: rel.qtd_promocoes, c: rel.cancelados })}`);
 ok(rel.por_pagamento.length === 2, "relatório separa pix e dinheiro");
 ok((await erro(B, `select relatorio_caixa($1, $2::date, $2::date)`, [barb, ter]))?.includes("Sem acesso"), "cliente não vê relatório");
+
+// equipe: convite, permissões do barbeiro, relatório por profissional, fotos
+const D = await usuario("barbeiro2@example.com", "Carlos");
+const conv = (await como(A, `insert into convites (barbearia_id) values ($1) returning codigo`, [barb])).rows[0].codigo;
+ok((await como(null, `select ver_convite($1) j`, [conv])).rows[0].j.valido === true, "convite válido aparece sem login");
+ok((await erro(B, `insert into convites (barbearia_id) values ($1)`, [barb])) !== null, "cliente não cria convite");
+await como(D, `select aceitar_convite($1, 'Carlos Souza', 'Barbeiro')`, [conv]);
+const profD = (await db.query(`select id, titulo from profissionais where user_id=$1`, [D])).rows[0];
+ok(!!profD && profD.titulo === "Barbeiro", "barbeiro entrou na equipe com perfil próprio");
+ok((await erro(C, `select aceitar_convite($1, 'X', 'Barbeiro')`, [conv]))?.includes("já foi usado"), "convite não é reaproveitado");
+ok((await como(D, `update servicos set preco = 1 where barbearia_id=$1 returning id`, [barb])).rows.length === 0, "barbeiro não muda preços");
+ok((await como(D, `update barbearias set nome='X' where id=$1 returning id`, [barb])).rows.length === 0, "barbeiro não muda dados da barbearia");
+ok((await como(D, `update horarios_semana set fim='20:00' where profissional_id=$1 returning id`, [prof.id])).rows.length === 0, "barbeiro não mexe no horário do outro");
+ok((await como(D, `update horarios_semana set fim='20:00' where profissional_id=$1 returning id`, [profD.id])).rows.length > 0, "barbeiro mexe no próprio horário");
+const perf = (await como(D, `update profissionais set titulo='Barbeira', ativo=false where id=$1 returning ativo, titulo`, [profD.id])).rows[0];
+ok(perf?.titulo === "Barbeira" && perf?.ativo === true, "barbeiro edita o perfil mas não se desativa");
+ok((await como(D, `update profissionais set nome='X' where id=$1 returning id`, [prof.id])).rows.length === 0, "barbeiro não edita o perfil do outro");
+ok((await como(D, `select id from agendamentos`)).rows.length === 0, "barbeiro não vê agendamentos do dono");
+const agD = (await agendarCom(B, profD.id, ts(ter, "15:00"), [sv["Barba"]])).rows[0].id;
+ok((await como(D, `select id from agendamentos`)).rows.length === 1, "barbeiro vê o agendamento dele");
+ok((await como(D, `select nome from clientes`)).rows.map((r) => r.nome).join() === "Pedro", "barbeiro vê só os clientes que marcaram com ele");
+ok((await erro(D, `select agendar_pelo_painel($1,$2,$3::timestamptz,$4::uuid[],null,'Y','1')`, [barb, prof.id, ts(ter, "18:00"), [sv["Barba"]]]))?.includes("própria agenda"), "barbeiro não marca na agenda do outro");
+ok(!!(await como(D, `select agendar_pelo_painel($1,$2,$3::timestamptz,$4::uuid[],null,'Novo do Carlos','41977776666') id`, [barb, profD.id, ts(ter, "16:00"), [sv["Barba"]]])).rows[0].id, "barbeiro marca na própria agenda");
+ok((await como(D, `select nome from clientes`)).rows.length === 2, "barbeiro vê o cliente que cadastrou");
+ok((await erro(D, `insert into bloqueios (barbearia_id, profissional_id, inicio, fim) values ($1, null, now(), now() + interval '1 hour')`, [barb])) !== null, "barbeiro não fecha a barbearia toda");
+ok((await como(D, `insert into bloqueios (barbearia_id, profissional_id, inicio, fim) values ($1, $2, now() + interval '30 days', now() + interval '31 days') returning id`, [barb, profD.id])).rows.length === 1, "barbeiro bloqueia a própria agenda");
+await como(D, `update agendamentos set status='concluido', forma_pagamento='credito' where id=$1`, [agD]);
+const relD = (await como(D, `select relatorio_caixa($1, $2::date, $2::date) r`, [barb, ter])).rows[0].r;
+ok(relD.atendimentos === 1 && Number(relD.total) === 30, "relatório do barbeiro só com os atendimentos dele");
+const relD2 = (await como(D, `select relatorio_caixa($1, $2::date, $2::date, $3) r`, [barb, ter, prof.id])).rows[0].r;
+ok(relD2.atendimentos === 1, "barbeiro não consegue puxar o relatório do outro");
+const relTodos = (await como(A, `select relatorio_caixa($1, $2::date, $2::date) r`, [barb, ter])).rows[0].r;
+ok(relTodos.atendimentos === 3 && relTodos.por_profissional.length === 2, "dono vê o relatório de todos");
+const relSoD = (await como(A, `select relatorio_caixa($1, $2::date, $2::date, $3) r`, [barb, ter, profD.id])).rows[0].r;
+ok(relSoD.atendimentos === 1, "dono vê o relatório de um profissional");
+const foto = (uid, caminho) => como(uid, `insert into storage.objects (bucket_id, name) values ('fotos', $1) returning name`, [caminho]);
+ok((await foto(D, `${barb}/${profD.id}/f.jpg`)).rows.length === 1, "barbeiro envia a própria foto");
+ok((await erro(D, `insert into storage.objects (bucket_id, name) values ('fotos', $1)`, [`${barb}/${prof.id}/f.jpg`])) !== null, "barbeiro não troca a foto do outro");
+ok((await erro(D, `insert into storage.objects (bucket_id, name) values ('fotos', $1)`, [`${barb}/capa/c.jpg`])) !== null, "barbeiro não troca a capa");
+ok((await foto(A, `${barb}/capa/c.jpg`)).rows.length === 1, "dono troca a capa");
+ok((await erro(A, `select remover_da_equipe($1)`, [prof.id]))?.includes("dono não pode"), "dono não remove a si mesmo");
+await como(A, `select remover_da_equipe($1)`, [profD.id]);
+ok((await como(D, `select id from agendamentos`)).rows.length === 0, "barbeiro removido perde o acesso");
+ok((await db.query(`select count(*)::int n from agendamentos where profissional_id=$1`, [profD.id])).rows[0].n === 2, "histórico do barbeiro removido fica");
 
 // segurança da assinatura
 ok((await erro(A, `update barbearias set assinatura_status='ativa' where id=$1`, [barb])) !== null, "barbeiro não muda a própria assinatura");

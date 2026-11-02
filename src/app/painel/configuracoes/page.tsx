@@ -3,7 +3,8 @@ import { CopiarTexto } from "@/components/CopiarTexto";
 import { FormularioAcao } from "@/components/FormularioAcao";
 import { ROTULO_ASSINATURA } from "@/lib/assinatura";
 import { dataCurta } from "@/lib/formatar";
-import { exigirBarbearia } from "@/lib/painel";
+import { EnviarFoto } from "@/components/EnviarFoto";
+import { exigirDono } from "@/lib/painel";
 import { linkAgendamento } from "@/lib/site";
 import { mensagemAusencia, mensagemSaudacao, telefoneBonito } from "@/lib/whatsapp";
 import { salvarConfiguracoes } from "../acoes";
@@ -21,14 +22,30 @@ function Campo({ id, rotulo, ajuda, ...resto }: React.InputHTMLAttributes<HTMLIn
 }
 
 export default async function Page() {
-  const { barbearia: b } = await exigirBarbearia();
+  const { barbearia: b } = await exigirDono();
   const link = linkAgendamento(b.slug);
   const saudacao = mensagemSaudacao({ barbearia: b.nome, linkAgendamento: link });
   const ausencia = mensagemAusencia({ barbearia: b.nome, linkAgendamento: link });
 
   return (
     <div className="space-y-8">
-      <h1 className="titulo">Configurações</h1>
+      <h1 className="titulo text-4xl">Minha barbearia</h1>
+
+      <section className="cartao overflow-hidden p-0">
+        <div className="relative h-40 bg-[#0f0d0c] sm:h-56">
+          {b.capa_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={b.capa_url} alt="Foto de capa" className="h-full w-full object-cover opacity-70" />
+          ) : (
+            <div className="faixa-listrada h-full w-full opacity-20" aria-hidden="true" />
+          )}
+          <p className="absolute bottom-3 left-4 font-titulo text-4xl font-black text-[#f3ede2] uppercase">{b.nome}</p>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <p className="text-sm text-suave">Foto de capa da sua página (a fachada, o salão, um corte bonito). Fica no topo, com o nome por cima.</p>
+          <EnviarFoto barbeariaId={b.id} tipo="capa" id={b.id} temFoto={!!b.capa_url} rotulo={b.capa_url ? "Trocar capa" : "Enviar capa"} maximo={1800} />
+        </div>
+      </section>
 
       <section className="cartao">
         <h2 className="subtitulo mb-1">WhatsApp: resposta automática com o link</h2>

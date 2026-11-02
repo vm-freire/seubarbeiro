@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Avatar } from "@/components/Avatar";
 import { useEffect, useMemo, useState } from "react";
 import { diaTemAtendimento, livresDoDia } from "@/lib/agenda/disponibilidade";
 import { moeda } from "@/lib/formatar";
@@ -151,10 +152,37 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
     router.push(ag ? `/c/${ag.token_confirmacao}?novo=1` : "/meus-agendamentos");
   }
 
+  // numeração dos passos: sem escolha de profissional, começa no 1
+  const n = (passo: number) => (profissionais.length > 1 ? passo : passo - 1);
+
   return (
     <div className="space-y-8">
+      {profissionais.length > 1 && (
+        <section>
+          <h2 className="subtitulo mb-3">1. Com quem?</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {profissionais.map((p) => {
+              const ativo = profId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setProfId(p.id)}
+                  aria-pressed={ativo}
+                  className={`flex flex-col items-center gap-2 rounded-2xl border p-4 text-center transition hover:-translate-y-0.5 ${ativo ? "border-destaque bg-superficie-2 ring-2 ring-destaque" : "border-borda bg-superficie"}`}
+                >
+                  <Avatar nome={p.nome} foto={p.foto_url} tamanho={72} />
+                  <span className="text-[0.65rem] font-bold tracking-[0.2em] text-destaque uppercase">{p.titulo}</span>
+                  <span className="font-titulo text-lg leading-tight font-extrabold uppercase">{p.nome}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <section>
-        <h2 className="subtitulo mb-3">1. O que você vai fazer?</h2>
+        <h2 className="subtitulo mb-3">{n(2)}. O que você vai fazer?</h2>
         <div className="grid gap-2">
           {servicos.map((s) => {
             const p = precoDoDia(s, promocoes, precoData);
@@ -181,27 +209,8 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
         </div>
       </section>
 
-      {profissionais.length > 1 && (
-        <section>
-          <h2 className="subtitulo mb-3">2. Com quem?</h2>
-          <div className="flex flex-wrap gap-2">
-            {profissionais.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setProfId(p.id)}
-                aria-pressed={profId === p.id}
-                className={profId === p.id ? "btn-primario" : "btn"}
-              >
-                {p.nome}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-
       <section>
-        <h2 className="subtitulo mb-3">{profissionais.length > 1 ? "3" : "2"}. Qual dia?</h2>
+        <h2 className="subtitulo mb-3">{n(3)}. Qual dia?</h2>
         {dias.length === 0 ? (
           <p className="text-sm text-suave">Não há dias abertos na agenda agora. Fale com a barbearia pelo WhatsApp.</p>
         ) : (
@@ -225,7 +234,7 @@ export function Agendador({ dados, hoje, ultimoDia, usuario, inicial }: Props) {
 
       {dataValida && (
         <section>
-          <h2 className="subtitulo mb-3">{profissionais.length > 1 ? "4" : "3"}. Qual horário?</h2>
+          <h2 className="subtitulo mb-3">{n(4)}. Qual horário?</h2>
           {!duracao ? (
             <p className="text-sm text-suave">Escolha pelo menos um serviço lá em cima.</p>
           ) : carregandoHorarios ? (
