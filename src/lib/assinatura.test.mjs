@@ -25,7 +25,7 @@ test("assinatura: teste de 7 dias + 3 de tolerância, cortesia sempre liberada",
 
 test("assinatura: textos da faixa do painel", () => {
   const b = (valida, status = "teste") => ({ plano: "teste", assinatura_status: status, assinatura_valida_ate: valida });
-  assert.match(avisoAssinatura(b("2026-11-09"), "2026-11-02").texto, /termina em 7 dias/);
+  assert.match(avisoAssinatura(b("2026-11-09"), "2026-11-02").texto, /termina em 7 dias\. Para continuar: R\$ 69,99\/mês/);
   assert.match(avisoAssinatura(b("2026-11-03"), "2026-11-02").texto, /amanhã/);
   assert.equal(avisoAssinatura(b("2026-11-03"), "2026-11-02").tom, "amarelo");
   assert.match(avisoAssinatura(b("2026-11-01"), "2026-11-10").texto, /dados continuam guardados/);

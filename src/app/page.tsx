@@ -44,7 +44,7 @@ export default function Home() {
               <Link href="/cadastro?tipo=barbeiro" className="btn-primario px-7 text-base">Cadastrar minha barbearia</Link>
               <Link href="/entrar" className="btn px-7 text-base">Já tenho conta</Link>
             </div>
-            <p className="entrar mt-3 text-sm text-suave" style={{ "--atraso": "560ms" } as React.CSSProperties}>7 dias grátis, sem cartão. Depois, R$ 70 por mês.</p>
+            <p className="entrar mt-3 text-sm text-suave" style={{ "--atraso": "560ms" } as React.CSSProperties}>7 dias grátis, sem cartão. Depois, R$ 69,99 por mês.</p>
           </div>
 
           {/* "Celular" com os avisos do painel: inclina em 3D seguindo o mouse */}

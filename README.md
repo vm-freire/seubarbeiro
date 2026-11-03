@@ -64,7 +64,7 @@ barbearia inicia são cobradas pela Meta. Os pontos de troca estão em
 
 ## Assinatura (cobrança mensal)
 
-- **R$ 70/mês**, cobrado pelo **Asaas** (Pix, boleto ou cartão). O cartão é
+- **R$ 69,99/mês**, cobrado pelo **Asaas** (Pix, boleto ou cartão). O cartão é
   digitado na página do Asaas: o site nunca vê os dados do cartão.
 - Barbearia nova: **7 dias de teste grátis, sem cartão** (migração 007).
   No fim do teste o dono assina em **Painel → Assinatura**.

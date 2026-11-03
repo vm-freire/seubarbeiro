@@ -13,7 +13,9 @@
 import type { Barbearia } from "./tipos.ts";
 
 export const TOLERANCIA_DIAS = 3;
-export const VALOR_MENSAL = 70;
+export const VALOR_MENSAL = 69.99;
+/** "R$ 69,99" */
+export const VALOR_MENSAL_TEXTO = `R$ ${VALOR_MENSAL.toFixed(2).replace(".", ",")}`;
 export const DIAS_TESTE = 7;
 
 type Situacao = Pick<Barbearia, "plano" | "assinatura_status" | "assinatura_valida_ate">;
@@ -80,7 +82,7 @@ export function avisoAssinatura(b: Situacao, hoje = new Date().toISOString().sli
     const dias = diasAte(vence, hoje);
     const texto =
       dias > 1 ? `Seu teste grátis termina em ${dias} dias.` : dias === 1 ? "Seu teste grátis termina amanhã." : dias === 0 ? "Seu teste grátis termina hoje." : "Seu teste grátis terminou.";
-    return { tom: dias <= 2 ? ("amarelo" as const) : ("neutro" as const), texto: `${texto} Para continuar: R$ ${VALOR_MENSAL}/mês no Pix, boleto ou cartão.` };
+    return { tom: dias <= 2 ? ("amarelo" as const) : ("neutro" as const), texto: `${texto} Para continuar: ${VALOR_MENSAL_TEXTO}/mês no Pix, boleto ou cartão.` };
   }
   return null;
 }
