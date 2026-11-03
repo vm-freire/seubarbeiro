@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { CampoSenha } from "@/components/CampoSenha";
 import { createClient } from "@/lib/supabase/client";
 import { comLimite, traduzirErro } from "@/lib/site";
 import { destinoSeguro } from "../destino";
@@ -49,8 +50,11 @@ export function FormEntrar({ proximo }: { proximo?: string }) {
         <input id="email" name="email" type="email" autoComplete="email" required className="campo" />
       </div>
       <div>
-        <label className="rotulo" htmlFor="senha">Senha</label>
-        <input id="senha" name="senha" type="password" autoComplete="current-password" required className="campo" />
+        <div className="flex items-baseline justify-between gap-2">
+          <label className="rotulo" htmlFor="senha">Senha</label>
+          <Link href="/esqueci-senha" className="text-sm font-medium text-destaque underline">Esqueci minha senha</Link>
+        </div>
+        <CampoSenha id="senha" autoComplete="current-password" required />
         <p className="ajuda">Você continua conectado neste aparelho até tocar em Sair.</p>
       </div>
       {erro && <p className="aviso selo-vermelho block" role="alert">{erro}</p>}

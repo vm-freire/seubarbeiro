@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { comLimite, traduzirErro } from "@/lib/site";
+import { CampoSenha } from "@/components/CampoSenha";
 import { destinoSeguro } from "../destino";
 
 export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro: boolean }) {
@@ -77,7 +78,7 @@ export function FormCadastro({ proximo, barbeiro }: { proximo?: string; barbeiro
       </div>
       <div>
         <label className="rotulo" htmlFor="senha">Senha</label>
-        <input id="senha" name="senha" type="password" autoComplete="new-password" required minLength={6} className="campo" />
+        <CampoSenha id="senha" autoComplete="new-password" required minLength={6} />
         <p className="ajuda">Pelo menos 6 caracteres.</p>
       </div>
       {erro && <p className="aviso selo-vermelho block" role="alert">{erro}</p>}

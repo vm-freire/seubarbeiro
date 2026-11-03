@@ -37,6 +37,9 @@ export function traduzirErro(e: { message?: string } | null | undefined, padrao 
   // o banco recusa WhatsApp repetido; o Supabase Auth troca a mensagem por esta
   if (/Database error saving new user/i.test(m)) return "Não deu para criar a conta: esse WhatsApp ou e-mail já está cadastrado. Use a opção Entrar.";
   if (/Password should be at least/i.test(m)) return "A senha precisa ter pelo menos 6 caracteres.";
+  if (/should be different from the old/i.test(m)) return "A senha nova precisa ser diferente da antiga.";
+  if (/Auth session missing|session.*expired|JWT expired/i.test(m)) return "O link de recuperação expirou. Peça outro em Esqueci minha senha.";
+  if (/only request this after|security purposes/i.test(m)) return "Já enviamos um link há pouco. Espere um minuto antes de pedir de novo.";
   if (/rate limit/i.test(m)) return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
   // "Load failed" é como o Safari (iPhone) chama a falha de rede
   if (/Failed to fetch|NetworkError|Load failed|TypeError/i.test(m)) return "Sem conexão com o servidor. Confira sua internet (ou desligue bloqueadores de conteúdo) e tente de novo.";
