@@ -230,5 +230,22 @@ ok((await erro(B, `select agendar($1,$2,$3::timestamptz,$4::uuid[])`, [barb, pro
 ok((await como(A, `update servicos set preco = 1 where barbearia_id=$1 returning id`, [barb])).rows.length === 0, "suspensa: barbeiro não edita");
 ok((await como(A, `select id from agendamentos`)).rows.length > 0, "suspensa: barbeiro ainda consegue ver os dados");
 
+// teste grátis de 7 dias + Asaas (migração 007)
+const nova = (await db.query(`select plano, assinatura_status, assinatura_valida_ate = current_date + 7 sete from barbearias where id=$1`, [barb])).rows[0];
+ok(nova.plano === "teste" && nova.sete === true, "barbearia nova nasce com 7 dias de teste");
+const antiga = (await db.query(`insert into barbearias (nome, slug, dono_id, assinatura_valida_ate) values ('Antiga', 'antiga', $1, null) returning id`, [A])).rows[0].id;
+await db.query(`update barbearias set assinatura_valida_ate = null where id=$1`, [antiga]); // como era antes da 007
+await db.exec(readFileSync(new URL("007_assinatura_asaas.sql", pasta), "utf8"));
+const cort = (await db.query(`select plano, assinatura_valida_ate from barbearias where id=$1`, [antiga])).rows[0];
+ok(cort.plano === "cortesia" && cort.assinatura_valida_ate === null, "barbearia de antes da cobrança vira cortesia (grátis)");
+ok((await db.query(`select plano from barbearias where id=$1`, [barb])).rows[0].plano === "teste", "rodar a 007 de novo não dá cortesia para as novas");
+await db.query(`insert into assinaturas (barbearia_id, asaas_cliente, asaas_assinatura, forma, valor) values ($1, 'cus_1', 'sub_1', 'PIX', 70)`, [barb]);
+ok((await como(A, `select asaas_assinatura from assinaturas`)).rows.length === 1, "dono vê a assinatura");
+ok((await como(D, `select asaas_assinatura from assinaturas`)).rows.length === 0, "barbeiro não vê a assinatura");
+ok((await erro(A, `update assinaturas set situacao='cancelada'`)) !== null, "dono não mexe na assinatura direto no banco");
+ok((await erro(A, `select id from asaas_eventos`)) !== null, "avisos do Asaas não são lidos pelo site");
+ok((await erro(A, `delete from barbearias where id=$1`, [barb])) !== null, "ninguém apaga a barbearia pelo site");
+ok((await erro(null, `delete from barbearias where id=$1`, [barb])) !== null, "sem login também não apaga");
+
 console.log(falhas ? `\n${falhas} FALHA(S)` : "\nTudo certo");
 process.exit(falhas ? 1 : 0);

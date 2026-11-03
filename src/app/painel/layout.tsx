@@ -5,7 +5,7 @@ import { Avatar } from "@/components/Avatar";
 import { BotaoTema } from "@/components/BotaoTema";
 import { Logo, LogoMarca } from "@/components/Logo";
 import { SinoAvisos } from "@/components/SinoAvisos";
-import { assinaturaLiberada, ROTULO_ASSINATURA } from "@/lib/assinatura";
+import { assinaturaLiberada, avisoAssinatura } from "@/lib/assinatura";
 import { contextoPainel, filtroEquipe } from "@/lib/painel";
 import { sair } from "@/app/(conta)/acoes";
 import { CriarBarbearia } from "./CriarBarbearia";
@@ -36,6 +36,7 @@ export default async function Layout({ children }: LayoutProps<"/painel">) {
   const b = atual.barbearia;
   const dono = atual.papel === "dono";
   const liberada = assinaturaLiberada(b);
+  const aviso = dono ? avisoAssinatura(b) : null;
   const { soDe } = await filtroEquipe(dono, meuProfissional);
   const nomeUsuario = meuProfissional?.nome ?? user.email ?? "";
 
@@ -77,9 +78,15 @@ export default async function Layout({ children }: LayoutProps<"/painel">) {
         <MenuPainel dono={dono} />
       </header>
 
-      {!liberada && (
+      {aviso && (
+        <div className={`aviso mx-auto mt-4 flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 ${aviso.tom === "vermelho" ? "selo-vermelho" : aviso.tom === "amarelo" ? "selo-amarelo" : "selo-cinza"}`}>
+          <span>{aviso.texto}</span>
+          <Link href="/painel/assinatura" className="btn-primario btn-pequeno">{liberada ? "Assinar" : "Assinar agora"}</Link>
+        </div>
+      )}
+      {!dono && !liberada && (
         <p className="aviso selo-vermelho mx-auto mt-4 block w-full max-w-6xl">
-          {ROTULO_ASSINATURA[b.assinatura_status]}: os clientes não conseguem agendar e as edições estão bloqueadas. Regularize para voltar ao normal.
+          A agenda da barbearia está pausada: os clientes não conseguem agendar e as edições estão bloqueadas. Fale com o dono.
         </p>
       )}
       {!dono && !meuProfissional && (

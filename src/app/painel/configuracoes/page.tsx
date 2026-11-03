@@ -1,7 +1,8 @@
 import { BotaoEnviar } from "@/components/BotaoEnviar";
 import { CopiarTexto } from "@/components/CopiarTexto";
 import { FormularioAcao } from "@/components/FormularioAcao";
-import { ROTULO_ASSINATURA } from "@/lib/assinatura";
+import Link from "next/link";
+import { rotuloAssinatura } from "@/lib/assinatura";
 import { dataCurta } from "@/lib/formatar";
 import { EnviarFoto } from "@/components/EnviarFoto";
 import { exigirDono } from "@/lib/painel";
@@ -138,10 +139,10 @@ export default async function Page() {
       <section className="cartao">
         <h2 className="subtitulo mb-1">Assinatura</h2>
         <p className="text-sm">
-          {ROTULO_ASSINATURA[b.assinatura_status]}
-          {b.assinatura_valida_ate ? ` · válida até ${dataCurta(b.assinatura_valida_ate)}` : ""}
+          {rotuloAssinatura(b)}
+          {b.assinatura_valida_ate ? ` · até ${dataCurta(b.assinatura_valida_ate)}` : ""}
         </p>
-        <p className="ajuda">Durante os testes o uso é gratuito.</p>
+        <Link href="/painel/assinatura" className="btn btn-pequeno mt-2">Ver assinatura e pagamentos</Link>
       </section>
     </div>
   );

@@ -14,6 +14,7 @@ const itens = [
   ["/painel/equipe", "Equipe", true],
   ["/painel/servicos", "Serviços e preços", true],
   ["/painel/configuracoes", "Barbearia", true],
+  ["/painel/assinatura", "Assinatura", true],
   ["/painel/perfil", "Meu perfil", false],
 ] as const;
 

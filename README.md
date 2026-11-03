@@ -64,14 +64,32 @@ barbearia inicia são cobradas pela Meta. Os pontos de troca estão em
 
 ## Assinatura (cobrança mensal)
 
-Cada barbearia tem `assinatura_status` (`teste`, `ativa`, `atrasada`,
-`suspensa`, `cancelada`) e `assinatura_valida_ate`. Fora do prazo (com 3
-dias de tolerância), o cliente não agenda e o painel fica só para leitura.
-O barbeiro **não** consegue mudar esses campos. Por enquanto, pelo SQL Editor:
+- **R$ 70/mês**, cobrado pelo **Asaas** (Pix, boleto ou cartão). O cartão é
+  digitado na página do Asaas: o site nunca vê os dados do cartão.
+- Barbearia nova: **7 dias de teste grátis, sem cartão** (migração 007).
+  No fim do teste o dono assina em **Painel → Assinatura**.
+- Barbearias criadas antes da cobrança: plano `cortesia`, grátis para sempre.
+- Cada barbearia tem `assinatura_status` (`teste`, `ativa`, `atrasada`,
+  `suspensa`, `cancelada`) e `assinatura_valida_ate`. Fora do prazo (com 3
+  dias de tolerância), o cliente não agenda e o painel fica só para leitura.
+- **Nada é apagado por falta de pagamento.** Pagou, volta tudo como estava.
+- O barbeiro **não** consegue mudar esses campos. Quem muda é o aviso do
+  Asaas (`/api/asaas/webhook`): pagou → `ativa` até o mês seguinte;
+  venceu → `atrasada`.
+
+Variáveis (no `.env.local` e na Vercel, nunca com `NEXT_PUBLIC_`):
+`SUPABASE_SERVICE_ROLE_KEY`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN` e
+`ASAAS_AMBIENTE` (`producao` para a conta real; vazio = sandbox).
+
+Webhook no Asaas: Integrações → Webhooks → URL
+`https://<site>/api/asaas/webhook`, token = `ASAAS_WEBHOOK_TOKEN`, eventos de
+cobrança (`PAYMENT_*`) e de assinatura (`SUBSCRIPTION_*`).
+
+Ajuste manual, se precisar (SQL Editor):
 
 ```sql
--- suspender
-update barbearias set assinatura_status = 'suspensa' where slug = 'nome-da-barbearia';
+-- dar cortesia (grátis para sempre)
+update barbearias set plano = 'cortesia', assinatura_status = 'teste', assinatura_valida_ate = null where slug = 'nome-da-barbearia';
 -- ativar até uma data
 update barbearias set assinatura_status = 'ativa', assinatura_valida_ate = '2026-12-31' where slug = 'nome-da-barbearia';
 ```
