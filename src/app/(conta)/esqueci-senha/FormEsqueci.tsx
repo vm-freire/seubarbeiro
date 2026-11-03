@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { comLimite, traduzirErro } from "@/lib/site";
+import { pedirRecuperacao } from "../acoes";
 
 /**
- * Pede o e-mail de recuperação (enviado pelo próprio Supabase). A resposta
- * é a mesma exista ou não a conta, para ninguém descobrir quais e-mails
- * estão cadastrados.
+ * Pede o e-mail de recuperação. O site envia em português pelo Resend
+ * (ação pedirRecuperacao); sem Resend configurado, usa o envio do
+ * Supabase. A resposta é a mesma exista ou não a conta, para ninguém
+ * descobrir quais e-mails estão cadastrados.
  */
 export function FormEsqueci() {
   const [erro, setErro] = useState<string | null>(null);
@@ -21,12 +23,16 @@ export function FormEsqueci() {
     setEnviando(true);
     const email = String(new FormData(e.currentTarget).get("email")).trim();
     try {
-      const { error } = await comLimite(
-        createClient().auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/confirmar?proximo=/redefinir-senha`,
-        }),
-      );
-      if (error) setErro(traduzirErro(error));
+      const r = await comLimite(pedirRecuperacao(email));
+      if (r.usarSupabase) {
+        const { error } = await comLimite(
+          createClient().auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/auth/confirmar?proximo=/redefinir-senha`,
+          }),
+        );
+        if (error) setErro(traduzirErro(error));
+        else setEnviado(email);
+      } else if (r.erro) setErro(r.erro);
       else setEnviado(email);
     } catch (err) {
       setErro(traduzirErro(err as Error));
