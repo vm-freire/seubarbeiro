@@ -126,11 +126,16 @@ export default async function Page() {
         ) : (
           b.assinatura_valida_ate && (
             <p className="text-sm text-suave">
-              {b.assinatura_status === "teste" ? "Teste grátis até" : "Pago até"} {dataCurta(b.assinatura_valida_ate)}
-              {dias !== null && dias >= 0 ? ` (${dias === 0 ? "hoje" : dias === 1 ? "amanhã" : `${dias} dias`})` : ""}
+              {b.assinatura_status === "teste" ? "Teste grátis até" : b.assinatura_status === "atrasada" ? "Venceu em" : "Pago até"} {dataCurta(b.assinatura_valida_ate)}
+              {b.assinatura_status !== "atrasada" && dias !== null && dias >= 0 ? ` (${dias === 0 ? "hoje" : dias === 1 ? "amanhã" : `${dias} dias`})` : ""}
               {!liberada ? " · bloqueada até o pagamento" : ""}
             </p>
           )
+        )}
+        {!cortesia && ativa && b.assinatura_status === "teste" && (
+          <p className="text-sm">
+            Assinatura feita ({FORMAS[ass.forma as FormaAsaas]}). Você pode pagar a 1ª cobrança agora ou até o vencimento.
+          </p>
         )}
         {!cortesia && !liberada && (
           <p className="aviso selo-vermelho mt-2 block">
@@ -146,8 +151,8 @@ export default async function Page() {
           <div>
             <h2 className="subtitulo">Assinar</h2>
             <p className="text-sm text-suave">
-              {b.assinatura_status === "teste" && dias !== null && dias > 0
-                ? `Você não paga nada agora: a 1ª cobrança vence em ${dataCurta(b.assinatura_valida_ate!)}, no fim do teste.`
+              {dias !== null && dias > 0
+                ? `Você não paga nada agora: a 1ª cobrança vence em ${dataCurta(b.assinatura_valida_ate!)}${b.assinatura_status === "teste" ? ", no fim do teste" : ", quando acaba o período já pago"}.`
                 : "A 1ª cobrança vence hoje. Assim que for paga, a agenda volta a funcionar."}
             </p>
           </div>
@@ -174,7 +179,7 @@ export default async function Page() {
       ) : (
         <>
           <section className="cartao space-y-3">
-            <h2 className="subtitulo">{emAberto ? "Pagar agora" : "Próxima cobrança"}</h2>
+            <h2 className="subtitulo">{emAberto && (emAberto.status === "OVERDUE" || !liberada) ? "Pagar agora" : "Próxima cobrança"}</h2>
             {erroCobrancas ? (
               <p className="aviso selo-amarelo block">Não conseguimos falar com o Asaas agora. Recarregue a página em instantes.</p>
             ) : emAberto ? (

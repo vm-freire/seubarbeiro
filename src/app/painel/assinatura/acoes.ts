@@ -11,10 +11,10 @@ import { asaasConfigurado, cancelarAssinatura, criarAssinatura, criarCliente, FO
 import { ehCortesia, VALOR_MENSAL } from "@/lib/assinatura";
 import { exigirDono } from "@/lib/painel";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { hojeLocal } from "@/lib/tempo";
 import type { ResultadoAcao } from "@/lib/tipos";
 
 const txt = (d: FormData, k: string) => String(d.get(k) ?? "").trim();
-const hojeUTC = () => new Date().toISOString().slice(0, 10);
 const formaValida = (v: string): v is FormaAsaas => v in FORMAS;
 const erroDe = (e: unknown, padrao: string) => (e instanceof Error && e.message ? e.message : padrao);
 
@@ -37,7 +37,7 @@ export async function assinar(_: ResultadoAcao, d: FormData): Promise<ResultadoA
   if (atual?.situacao === "ativa") return { erro: "Sua barbearia já tem assinatura. Recarregue a página." };
 
   // primeira cobrança: no fim do teste (ou do período pago); se já venceu, hoje
-  const hoje = hojeUTC();
+  const hoje = hojeLocal(b.fuso);
   const vencimento = b.assinatura_valida_ate && b.assinatura_valida_ate > hoje ? b.assinatura_valida_ate : hoje;
 
   try {

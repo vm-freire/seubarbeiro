@@ -36,7 +36,12 @@ export default async function Layout({ children }: LayoutProps<"/painel">) {
   const b = atual.barbearia;
   const dono = atual.papel === "dono";
   const liberada = assinaturaLiberada(b);
-  const aviso = dono ? avisoAssinatura(b) : null;
+  let aviso = dono ? avisoAssinatura(b) : null;
+  // já assinou durante o teste: não fica pedindo para assinar
+  if (aviso && liberada && b.assinatura_status === "teste") {
+    const { data: ass } = await supabase.from("assinaturas").select("situacao").eq("barbearia_id", b.id).maybeSingle();
+    if (ass?.situacao === "ativa") aviso = null;
+  }
   const { soDe } = await filtroEquipe(dono, meuProfissional);
   const nomeUsuario = meuProfissional?.nome ?? user.email ?? "";
 
@@ -81,7 +86,7 @@ export default async function Layout({ children }: LayoutProps<"/painel">) {
       {aviso && (
         <div className={`aviso mx-auto mt-4 flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 ${aviso.tom === "vermelho" ? "selo-vermelho" : aviso.tom === "amarelo" ? "selo-amarelo" : "selo-cinza"}`}>
           <span>{aviso.texto}</span>
-          <Link href="/painel/assinatura" className="btn-primario btn-pequeno">{liberada ? "Assinar" : "Assinar agora"}</Link>
+          <Link href="/painel/assinatura" className="btn-primario btn-pequeno">{b.assinatura_status === "atrasada" ? "Pagar" : liberada ? "Assinar" : "Assinar agora"}</Link>
         </div>
       )}
       {!dono && !liberada && (
